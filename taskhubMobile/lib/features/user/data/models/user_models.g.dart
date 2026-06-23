@@ -25,6 +25,8 @@ UserProfileResponse _$UserProfileResponseFromJson(Map<String, dynamic> json) =>
       isVerified: json['isVerified'] as bool?,
       isAvailable: json['isAvailable'] as bool?,
       isBanned: json['isBanned'] as bool?,
+      dateOfBirth: json['dateOfBirth'] as String?,
+      age: (json['age'] as num?)?.toInt(),
       averageRatingAsFreelancer: (json['averageRatingAsFreelancer'] as num?)?.toDouble(),
       averageRatingAsHirer: (json['averageRatingAsHirer'] as num?)?.toDouble(),
       totalReviewsAsFreelancer: (json['totalReviewsAsFreelancer'] as num?)?.toInt(),
@@ -58,6 +60,8 @@ Map<String, dynamic> _$UserProfileResponseToJson(UserProfileResponse instance) =
       'isVerified': instance.isVerified,
       'isAvailable': instance.isAvailable,
       'isBanned': instance.isBanned,
+      'dateOfBirth': instance.dateOfBirth,
+      'age': instance.age,
       'averageRatingAsFreelancer': instance.averageRatingAsFreelancer,
       'averageRatingAsHirer': instance.averageRatingAsHirer,
       'totalReviewsAsFreelancer': instance.totalReviewsAsFreelancer,
@@ -86,6 +90,7 @@ UserProfileUpdateRequest _$UserProfileUpdateRequestFromJson(
       languages: (json['languages'] as List<dynamic>?)?.map((e) => e as String).toList(),
       certifications: (json['certifications'] as List<dynamic>?)?.map((e) => e as String).toList(),
       avatarUrl: json['avatarUrl'] as String?,
+      dateOfBirth: json['dateOfBirth'] as String?,
     );
 
 Map<String, dynamic> _$UserProfileUpdateRequestToJson(
@@ -106,4 +111,5 @@ Map<String, dynamic> _$UserProfileUpdateRequestToJson(
       'languages': instance.languages,
       'certifications': instance.certifications,
       'avatarUrl': instance.avatarUrl,
+      'dateOfBirth': instance.dateOfBirth,
     };

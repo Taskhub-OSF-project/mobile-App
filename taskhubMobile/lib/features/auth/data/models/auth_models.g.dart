@@ -67,6 +67,8 @@ RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
       university: json['university'] as String?,
       major: json['major'] as String?,
       role: json['role'] as String,
+      phoneNumber: json['phoneNumber'] as String?,
+      dateOfBirth: json['dateOfBirth'] as String?,
     );
 
 Map<String, dynamic> _$RegisterRequestToJson(RegisterRequest instance) =>
@@ -77,6 +79,8 @@ Map<String, dynamic> _$RegisterRequestToJson(RegisterRequest instance) =>
       'university': instance.university,
       'major': instance.major,
       'role': instance.role,
+      'phoneNumber': instance.phoneNumber,
+      'dateOfBirth': instance.dateOfBirth,
     };
 
 RefreshTokenRequest _$RefreshTokenRequestFromJson(Map<String, dynamic> json) =>

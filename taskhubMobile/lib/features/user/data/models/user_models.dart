@@ -33,6 +33,9 @@ class UserProfileResponse {
   final bool? isAvailable;
   @JsonKey(name: 'isBanned')
   final bool? isBanned;
+  @JsonKey(name: 'dateOfBirth')
+  final String? dateOfBirth;
+  final int? age;
   @JsonKey(name: 'averageRatingAsFreelancer')
   final double? averageRatingAsFreelancer;
   @JsonKey(name: 'averageRatingAsHirer')
@@ -72,6 +75,8 @@ class UserProfileResponse {
     this.isVerified,
     this.isAvailable,
     this.isBanned,
+    this.dateOfBirth,
+    this.age,
     this.averageRatingAsFreelancer,
     this.averageRatingAsHirer,
     this.totalReviewsAsFreelancer,
@@ -113,6 +118,8 @@ class UserProfileUpdateRequest {
   final List<String>? certifications;
   @JsonKey(name: 'avatarUrl')
   final String? avatarUrl;
+  @JsonKey(name: 'dateOfBirth')
+  final String? dateOfBirth;
 
   UserProfileUpdateRequest({
     this.fullName,
@@ -130,6 +137,7 @@ class UserProfileUpdateRequest {
     this.languages,
     this.certifications,
     this.avatarUrl,
+    this.dateOfBirth,
   });
 
   factory UserProfileUpdateRequest.fromJson(Map<String, dynamic> json) =>

@@ -57,6 +57,10 @@ class RegisterRequest {
   final String? university;
   final String? major;
   final String role;
+  @JsonKey(name: 'phoneNumber')
+  final String? phoneNumber;
+  @JsonKey(name: 'dateOfBirth')
+  final String? dateOfBirth;
 
   RegisterRequest({
     required this.email,
@@ -65,6 +69,8 @@ class RegisterRequest {
     this.university,
     this.major,
     required this.role,
+    this.phoneNumber,
+    this.dateOfBirth,
   });
 
   factory RegisterRequest.fromJson(Map<String, dynamic> json) =>

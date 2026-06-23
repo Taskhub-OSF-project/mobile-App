@@ -121,6 +121,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String role,
     String? university,
     String? major,
+    String? phoneNumber,
+    String? dateOfBirth,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     final result = await _authRepo.register(
@@ -131,6 +133,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         role: role,
         university: university,
         major: major,
+        phoneNumber: phoneNumber,
+        dateOfBirth: dateOfBirth,
       ),
     );
 

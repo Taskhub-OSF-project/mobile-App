@@ -25,6 +25,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late TextEditingController _skillsController;
   late TextEditingController _languagesController;
   late TextEditingController _portfolioController;
+  DateTime? _dateOfBirth;
 
   bool _isLoading = false;
   bool _isSaving = false;
@@ -47,6 +48,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         TextEditingController(text: user?.languages?.join(', ') ?? '');
     _portfolioController =
         TextEditingController(text: user?.portfolioUrl ?? '');
+    if (user?.dateOfBirth != null) {
+      _dateOfBirth = DateTime.tryParse(user!.dateOfBirth!);
+    }
     _isLoading = true;
     _loadProfile();
   }
@@ -71,6 +75,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _languagesController.dispose();
     _portfolioController.dispose();
     super.dispose();
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _selectDateOfBirth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateOfBirth ?? DateTime(now.year - 20),
+      firstDate: DateTime(1950),
+      lastDate: DateTime(now.year - 10),
+    );
+    if (picked != null) {
+      setState(() => _dateOfBirth = picked);
+    }
   }
 
   List<String> _parseCommaSeparated(String text) {
@@ -107,6 +128,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       portfolioUrl: _portfolioController.text.trim().isEmpty
           ? null
           : _portfolioController.text.trim(),
+      dateOfBirth: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : null,
     );
 
     final repo = ref.read(userRepositoryProvider);
@@ -189,6 +211,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(labelText: 'Phone'),
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: _selectDateOfBirth,
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          decoration: InputDecoration(
+                            labelText: 'Date of Birth',
+                            prefixIcon: const Icon(Icons.cake_outlined),
+                            suffixIcon: const Icon(Icons.calendar_today_outlined),
+                          ),
+                          controller: TextEditingController(
+                            text: _dateOfBirth != null
+                                ? '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'
+                                : '',
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

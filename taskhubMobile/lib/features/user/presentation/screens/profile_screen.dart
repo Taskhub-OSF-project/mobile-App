@@ -148,6 +148,18 @@ class ProfileScreen extends ConsumerWidget {
                       label: 'Major',
                       value: user.major!,
                     ),
+                  if (user.age != null)
+                    _ProfileTile(
+                      icon: Icons.cake_outlined,
+                      label: 'Age',
+                      value: '${user.age} years old',
+                    ),
+                  if (user.dateOfBirth != null)
+                    _ProfileTile(
+                      icon: Icons.calendar_today_outlined,
+                      label: 'Date of Birth',
+                      value: user.dateOfBirth!,
+                    ),
                   if (user.title != null)
                     _ProfileTile(
                       icon: Icons.work_outline,
