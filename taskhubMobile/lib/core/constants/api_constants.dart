@@ -14,6 +14,11 @@ class ApiConstants {
   static const String forgotPassword = '$apiPrefix/auth/forgot-password';
   static const String resetPassword = '$apiPrefix/auth/reset-password';
   static const String verifyEmail = '$apiPrefix/auth/verify-email';
+  static const String loginPhone = '$apiPrefix/auth/login-phone';
+  static const String requestPhoneOtp = '$apiPrefix/auth/request-phone-otp';
+  static const String verifyPhoneOtp = '$apiPrefix/auth/verify-phone-otp';
+  static const String forgotPasswordPhone = '$apiPrefix/auth/forgot-password-phone';
+  static const String resetPasswordOtp = '$apiPrefix/auth/reset-password-otp';
 
   // Users
   static const String me = '$apiPrefix/users/me';

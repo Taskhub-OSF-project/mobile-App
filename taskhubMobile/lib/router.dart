@@ -5,6 +5,9 @@ import 'providers.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
+import 'features/auth/presentation/screens/forgot_password_screen.dart';
+import 'features/auth/presentation/screens/otp_verification_screen.dart';
+import 'features/auth/presentation/screens/reset_password_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/task/presentation/screens/task_list_screen.dart';
 import 'features/task/presentation/screens/task_detail_screen.dart';
@@ -29,13 +32,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggingIn = state.matchedLocation == '/login';
       final isRegistering = state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/';
+      final isAuthRoute = isLoggingIn || isRegistering || isSplash ||
+          state.matchedLocation == '/forgot-password' ||
+          state.matchedLocation == '/otp-verify' ||
+          state.matchedLocation == '/reset-password';
 
       if (authState.status == AuthStatus.initial ||
           authState.status == AuthStatus.loading) {
         return null;
       }
 
-      if (!isAuth && !isLoggingIn && !isRegistering && !isSplash) {
+      if (!isAuth && !isAuthRoute) {
         return '/login';
       }
 
@@ -57,6 +64,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/otp-verify',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return OtpVerificationScreen(
+            phone: extra['phone'] as String? ?? '',
+            type: extra['type'] as String? ?? 'RECOVERY',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return ResetPasswordScreen(
+            phone: extra['phone'] as String? ?? '',
+            code: extra['code'] as String? ?? '',
+          );
+        },
       ),
       ShellRoute(
         builder: (context, state, child) => MainScaffold(child: child),

@@ -15,12 +15,15 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loginByPhone = false;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -28,10 +31,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await ref.read(authNotifierProvider.notifier).login(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
+    bool success;
+    if (_loginByPhone) {
+      success = await ref.read(authNotifierProvider.notifier).loginByPhone(
+            _phoneController.text.trim(),
+            _passwordController.text,
+          );
+    } else {
+      success = await ref.read(authNotifierProvider.notifier).login(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
+    }
 
     if (success && mounted) {
       context.go('/home');
@@ -86,6 +97,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 48),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() { _loginByPhone = false; }),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: !_loginByPhone ? AppTheme.primary : Colors.grey[300]!,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Email',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: !_loginByPhone ? FontWeight.bold : FontWeight.normal,
+                                color: !_loginByPhone ? AppTheme.primary : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() { _loginByPhone = true; }),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: _loginByPhone ? AppTheme.primary : Colors.grey[300]!,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Phone',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: _loginByPhone ? FontWeight.bold : FontWeight.normal,
+                                color: _loginByPhone ? AppTheme.primary : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                   if (authState.isError && authState.errorMessage != null)
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -115,24 +179,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                       ),
                     ),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
+                  if (!_loginByPhone)
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
+                    )
+                  else
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone',
+                        prefixIcon: Icon(Icons.phone_outlined),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your phone number';
+                        }
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
@@ -164,9 +245,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // TODO: Navigate to forgot password
-                      },
+                      onPressed: () => context.go('/forgot-password'),
                       child: const Text('Forgot password?'),
                     ),
                   ),

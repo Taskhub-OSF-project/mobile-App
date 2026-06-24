@@ -16,19 +16,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(authNotifierProvider.notifier).checkAuthStatus();
+      context.go('/login');
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(authNotifierProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated) {
-        context.go('/home');
-      } else if (next.status == AuthStatus.unauthenticated) {
-        context.go('/login');
-      }
-    });
 
     return Scaffold(
       body: Container(

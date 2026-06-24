@@ -66,4 +66,56 @@ class AuthRepository {
       data: {'token': token},
     );
   }
+
+  Future<Result<AuthResponse>> loginByPhone(String phone, String password) async {
+    final response = await _api.post<AuthResponse>(
+      ApiConstants.loginPhone,
+      data: {'phone': phone, 'password': password},
+      parser: (json) => AuthResponse.fromJson(json['data'] as Map<String, dynamic>),
+    );
+    return response;
+  }
+
+  Future<Result<void>> requestPhoneOtp(String phone, String type) async {
+    return _api.post<void>(
+      ApiConstants.requestPhoneOtp,
+      data: {'phone': phone, 'type': type},
+    );
+  }
+
+  Future<Result<AuthResponse>> verifyPhoneOtp({
+    required String phone,
+    required String code,
+    required String type,
+    RegisterRequest? registerRequest,
+  }) async {
+    final response = await _api.post<AuthResponse>(
+      ApiConstants.verifyPhoneOtp,
+      data: {
+        'phone': phone,
+        'code': code,
+        'type': type,
+        'registerRequest': registerRequest?.toJson(),
+      },
+      parser: (json) => AuthResponse.fromJson(json['data'] as Map<String, dynamic>),
+    );
+    return response;
+  }
+
+  Future<Result<ForgotPasswordResponse>> forgotPasswordByPhone(String phone) async {
+    final response = await _api.post<ForgotPasswordResponse>(
+      ApiConstants.forgotPasswordPhone,
+      data: {'phone': phone, 'type': 'RECOVERY'},
+      parser: (json) =>
+          ForgotPasswordResponse.fromJson(json['data'] as Map<String, dynamic>),
+    );
+    return response;
+  }
+
+  Future<Result<void>> resetPasswordWithOtp(String phone, String code, String newPassword) async {
+    return _api.post<void>(
+      ApiConstants.resetPasswordOtp,
+      data: {'phone': phone, 'code': code, 'newPassword': newPassword},
+    );
+  }
 }

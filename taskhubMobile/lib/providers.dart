@@ -188,6 +188,69 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void clearError() {
     state = state.copyWith(errorMessage: null);
   }
+
+  Future<bool> loginByPhone(String phone, String password) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    final result = await _authRepo.loginByPhone(phone, password);
+
+    return result.when(
+      success: (auth) async {
+        await _storage.saveTokens(
+          accessToken: auth.accessToken,
+          refreshToken: auth.refreshToken,
+        );
+        await _storage.saveUserSession(
+          userId: auth.userId,
+          role: auth.role.name,
+          email: auth.email,
+          fullName: auth.fullName,
+        );
+        final profileResult = await _userRepo.getProfile(auth.userId);
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          authResponse: auth,
+          user: profileResult.data,
+        );
+        return true;
+      },
+      failure: (error) {
+        state = state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: error.message,
+        );
+        return false;
+      },
+    );
+  }
+
+  Future<bool> resetPasswordWithOtp(String phone, String code, String newPassword) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    final result = await _authRepo.resetPasswordWithOtp(phone, code, newPassword);
+    return result.when(
+      success: (_) {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+        return true;
+      },
+      failure: (error) {
+        state = state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: error.message,
+        );
+        return false;
+      },
+    );
+  }
+
+  Future<bool> requestPhoneOtp(String phone, String type) async {
+    final result = await _authRepo.requestPhoneOtp(phone, type);
+    return result.when(
+      success: (_) => true,
+      failure: (error) {
+        state = state.copyWith(errorMessage: error.message);
+        return false;
+      },
+    );
+  }
 }
 
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
