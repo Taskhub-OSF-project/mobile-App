@@ -70,7 +70,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
       });
     } else if (mounted) {
       setState(() {
-        _error = result.error?.message ?? 'Failed to load tasks';
+        _error = result.error?.message ?? 'Tải danh sách thất bại';
         _isLoading = false;
       });
     }
@@ -88,7 +88,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.available ? 'Available Tasks' : 'My Tasks'),
+        title: Text(widget.available ? 'Việc làm có sẵn' : 'Công việc của tôi'),
         actions: [
           if (!widget.available && (user?.isHirer ?? false))
             IconButton(
@@ -107,9 +107,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
             : TabBar(
                 controller: _tabController,
                 tabs: const [
-                  Tab(text: 'All'),
-                  Tab(text: 'Posted'),
-                  Tab(text: 'Applied'),
+                  Tab(text: 'Tất cả'),
+                  Tab(text: 'Đã đăng'),
+                  Tab(text: 'Đã ứng tuyển'),
                 ],
               ),
       ),
@@ -125,16 +125,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
                 : _tasks.isEmpty
                     ? EmptyState(
                         icon: Icons.assignment_outlined,
-                        title: 'No tasks found',
+                        title: 'Chưa có công việc nào',
                         subtitle: widget.available
-                            ? 'Check back later for new opportunities'
-                            : "You haven't created or applied to any tasks yet",
-                        action: widget.available
+                            ? 'Vui lòng quay lại sau'
+                            : 'Bạn chưa đăng hay ứng tuyển công việc nào',
+                        action: widget.available || !(user?.isHirer ?? false)
                             ? null
                             : ElevatedButton.icon(
                                 onPressed: () => context.push('/tasks/create'),
                                 icon: const Icon(Icons.add),
-                                label: const Text('Create Task'),
+                                label: const Text('Đăng việc'),
                               ),
                       )
                     : ListView.builder(

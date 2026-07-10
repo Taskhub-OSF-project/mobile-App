@@ -1,7 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_service.dart';
-import '../../../../core/network/api_exception.dart';
-import '../../../../core/models/api_response.dart';
+import '../../../../core/models/result.dart';
+import 'package:taskhub_mobile/core/models/page_response.dart';
 import '../models/notification_models.dart';
 
 class NotificationRepository {
@@ -18,7 +18,7 @@ class NotificationRepository {
       ApiConstants.notifications,
       queryParameters: {'page': page, 'size': size},
       parser: (json) => PageResponse<NotificationResponse>.fromJson(
-        json['data'] as Map<String, dynamic>,
+        json as Map<String, dynamic>,
         (e) => NotificationResponse.fromJson(e as Map<String, dynamic>),
       ),
     );
@@ -29,7 +29,7 @@ class NotificationRepository {
     final response = await _api.get<List<NotificationResponse>>(
       ApiConstants.unreadNotifications,
       parser: (json) {
-        final list = json['data'] as List<dynamic>;
+        final list = json as List<dynamic>;
         return list
             .map((e) =>
                 NotificationResponse.fromJson(e as Map<String, dynamic>))
@@ -43,7 +43,7 @@ class NotificationRepository {
     final response = await _api.get<int>(
       ApiConstants.unreadCount,
       parser: (json) {
-        final data = json['data'];
+        final data = json;
         if (data is Map) {
           return (data['unreadCount'] ?? 0) as int;
         }

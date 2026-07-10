@@ -1,6 +1,6 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_service.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/models/result.dart';
 import '../models/auth_models.dart';
 
 class AuthRepository {
@@ -9,71 +9,86 @@ class AuthRepository {
   AuthRepository(this._api);
 
   Future<Result<AuthResponse>> login(LoginRequest request) async {
-    final response = await _api.post<AuthResponse>(
+    return _api.post<AuthResponse>(
       ApiConstants.login,
       data: request.toJson(),
-      parser: (json) => AuthResponse.fromJson(json['data'] as Map<String, dynamic>),
+      parser: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
     );
-    return response;
   }
 
   Future<Result<AuthResponse>> register(RegisterRequest request) async {
-    final response = await _api.post<AuthResponse>(
+    return _api.post<AuthResponse>(
       ApiConstants.register,
       data: request.toJson(),
-      parser: (json) => AuthResponse.fromJson(json['data'] as Map<String, dynamic>),
+      parser: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
     );
-    return response;
   }
 
   Future<Result<void>> logout(String? refreshToken) async {
-    final data = refreshToken != null
-        ? {'refreshToken': refreshToken}
-        : null;
     return _api.post<void>(
       ApiConstants.logout,
-      data: data,
+      data: refreshToken != null ? {'refreshToken': refreshToken} : null,
     );
   }
 
-  Future<Result<void>> logoutAll() async {
-    return _api.post<void>(ApiConstants.logoutAll);
+  Future<Result<AuthResponse>> refreshToken(RefreshTokenRequest request) async {
+    return _api.post<AuthResponse>(
+      ApiConstants.refresh,
+      data: request.toJson(),
+      parser: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
+    );
   }
 
-  Future<Result<ForgotPasswordResponse>> forgotPassword(String email) async {
-    final response = await _api.post<ForgotPasswordResponse>(
+  Future<Result<ForgotPasswordResponse>> forgotPassword(ForgotPasswordRequest request) async {
+    return _api.post<ForgotPasswordResponse>(
       ApiConstants.forgotPassword,
-      data: {'email': email},
-      parser: (json) =>
-          ForgotPasswordResponse.fromJson(json['data'] as Map<String, dynamic>),
+      data: request.toJson(),
+      parser: (json) => ForgotPasswordResponse.fromJson(json as Map<String, dynamic>),
     );
-    return response;
   }
 
-  Future<Result<void>> resetPassword(String token, String newPassword) async {
+  Future<Result<void>> recoverAccount(RecoverAccountRequest request) async {
+    return _api.post<void>(
+      '/api/auth/recover', // Add actual endpoint from constants later if needed
+      data: request.toJson(),
+    );
+  }
+
+  Future<Result<void>> requestPasswordReset(PasswordResetRequest request) async {
+    return _api.post<void>(
+      '/api/auth/password-reset-request', // Add actual endpoint from constants later
+      data: request.toJson(),
+    );
+  }
+
+  Future<Result<void>> confirmPasswordReset(PasswordResetConfirmRequest request) async {
+    return _api.post<void>(
+      '/api/auth/password-reset-confirm', // Add actual endpoint from constants later
+      data: request.toJson(),
+    );
+  }
+
+  Future<Result<void>> resetPassword(ResetPasswordRequest request) async {
     return _api.post<void>(
       ApiConstants.resetPassword,
-      data: {
-        'token': token,
-        'newPassword': newPassword,
-      },
+      data: request.toJson(),
     );
   }
 
-  Future<Result<void>> verifyEmail(String token) async {
+  Future<Result<void>> verifyEmail(VerifyEmailRequest request) async {
     return _api.post<void>(
       ApiConstants.verifyEmail,
-      data: {'token': token},
+      data: request.toJson(),
     );
   }
 
+  // Maintaining Phone Auth endpoints from scaffold in case they are used
   Future<Result<AuthResponse>> loginByPhone(String phone, String password) async {
-    final response = await _api.post<AuthResponse>(
+    return _api.post<AuthResponse>(
       ApiConstants.loginPhone,
       data: {'phone': phone, 'password': password},
-      parser: (json) => AuthResponse.fromJson(json['data'] as Map<String, dynamic>),
+      parser: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
     );
-    return response;
   }
 
   Future<Result<void>> requestPhoneOtp(String phone, String type) async {
@@ -83,35 +98,6 @@ class AuthRepository {
     );
   }
 
-  Future<Result<AuthResponse>> verifyPhoneOtp({
-    required String phone,
-    required String code,
-    required String type,
-    RegisterRequest? registerRequest,
-  }) async {
-    final response = await _api.post<AuthResponse>(
-      ApiConstants.verifyPhoneOtp,
-      data: {
-        'phone': phone,
-        'code': code,
-        'type': type,
-        'registerRequest': registerRequest?.toJson(),
-      },
-      parser: (json) => AuthResponse.fromJson(json['data'] as Map<String, dynamic>),
-    );
-    return response;
-  }
-
-  Future<Result<ForgotPasswordResponse>> forgotPasswordByPhone(String phone) async {
-    final response = await _api.post<ForgotPasswordResponse>(
-      ApiConstants.forgotPasswordPhone,
-      data: {'phone': phone, 'type': 'RECOVERY'},
-      parser: (json) =>
-          ForgotPasswordResponse.fromJson(json['data'] as Map<String, dynamic>),
-    );
-    return response;
-  }
-
   Future<Result<void>> resetPasswordWithOtp(String phone, String code, String newPassword) async {
     return _api.post<void>(
       ApiConstants.resetPasswordOtp,
@@ -119,3 +105,4 @@ class AuthRepository {
     );
   }
 }
+

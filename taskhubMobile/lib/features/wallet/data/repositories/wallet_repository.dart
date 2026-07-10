@@ -1,7 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_service.dart';
-import '../../../../core/network/api_exception.dart';
-import '../../../../core/models/api_response.dart';
+import '../../../../core/models/result.dart';
+import 'package:taskhub_mobile/core/models/page_response.dart';
 import '../models/wallet_models.dart';
 
 class WalletRepository {
@@ -12,8 +12,7 @@ class WalletRepository {
   Future<Result<WalletResponse>> getBalance() async {
     final response = await _api.get<WalletResponse>(
       ApiConstants.walletBalance,
-      parser: (json) =>
-          WalletResponse.fromJson(json['data'] as Map<String, dynamic>),
+      parser: (json) => WalletResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -24,7 +23,7 @@ class WalletRepository {
       ApiConstants.walletReadiness,
       queryParameters: {'budget': budget},
       parser: (json) => WalletReadinessResponse.fromJson(
-          json['data'] as Map<String, dynamic>),
+          json as Map<String, dynamic>),
     );
     return response;
   }
@@ -33,8 +32,7 @@ class WalletRepository {
     final response = await _api.post<WalletResponse>(
       ApiConstants.walletDeposit,
       queryParameters: {'amount': amount},
-      parser: (json) =>
-          WalletResponse.fromJson(json['data'] as Map<String, dynamic>),
+      parser: (json) => WalletResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -43,8 +41,7 @@ class WalletRepository {
     final response = await _api.post<WalletResponse>(
       ApiConstants.walletWithdraw,
       queryParameters: {'amount': amount},
-      parser: (json) =>
-          WalletResponse.fromJson(json['data'] as Map<String, dynamic>),
+      parser: (json) => WalletResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -57,7 +54,7 @@ class WalletRepository {
       ApiConstants.walletTransactionsPaged,
       queryParameters: {'page': page, 'size': size},
       parser: (json) => PageResponse<WalletTransactionResponse>.fromJson(
-        json['data'] as Map<String, dynamic>,
+        json as Map<String, dynamic>,
         (e) => WalletTransactionResponse.fromJson(e as Map<String, dynamic>),
       ),
     );

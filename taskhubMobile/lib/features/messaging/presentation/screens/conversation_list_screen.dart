@@ -40,7 +40,7 @@ class _ConversationListScreenState
       });
     } else if (mounted) {
       setState(() {
-        _error = result.error?.message ?? 'Failed to load conversations';
+        _error = result.error?.message ?? 'Tải danh sách tin nhắn thất bại';
         _isLoading = false;
       });
     }
@@ -50,7 +50,7 @@ class _ConversationListScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Messages'),
+        title: const Text('Tin nhắn'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -60,8 +60,8 @@ class _ConversationListScreenState
               : _conversations.isEmpty
                   ? const EmptyState(
                       icon: Icons.chat_bubble_outline,
-                      title: 'No messages yet',
-                      subtitle: 'Start a conversation from a task',
+                      title: 'Chưa có tin nhắn',
+                      subtitle: 'Bắt đầu cuộc trò chuyện từ một công việc',
                     )
                   : RefreshIndicator(
                       onRefresh: _loadConversations,
@@ -95,7 +95,7 @@ class _ConversationTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        conversation.otherUserName ?? 'Unknown',
+        conversation.otherUserName ?? 'Không rõ',
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       subtitle: Column(
@@ -103,7 +103,7 @@ class _ConversationTile extends StatelessWidget {
         children: [
           if (conversation.taskTitle != null)
             Text(
-              'Task: ${conversation.taskTitle}',
+              'Công việc: ${conversation.taskTitle}',
               style: TextStyle(fontSize: 11, color: Colors.grey[500]),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

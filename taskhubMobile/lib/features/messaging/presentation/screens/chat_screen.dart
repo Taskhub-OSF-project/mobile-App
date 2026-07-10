@@ -54,7 +54,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ref.read(messagingRepositoryProvider).markAsRead(widget.conversationId);
     } else if (mounted) {
       setState(() {
-        _error = result.error?.message ?? 'Failed to load messages';
+        _error = result.error?.message ?? 'Tải tin nhắn thất bại';
         _isLoading = false;
       });
     }
@@ -93,7 +93,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: const Text('Trò chuyện'),
       ),
       body: Column(
         children: [
@@ -106,7 +106,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             Text(_error!, style: const TextStyle(color: Colors.red)))
                     : _messages.isEmpty
                         ? const Center(
-                            child: Text('No messages yet. Say hello!',
+                            child: Text('Chưa có tin nhắn. Hãy bắt đầu trò chuyện!',
                                 style: TextStyle(color: Colors.grey)))
                         : ListView.builder(
                             controller: _scrollController,
@@ -141,7 +141,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     child: TextField(
                       controller: _textController,
                       decoration: InputDecoration(
-                        hintText: 'Type a message...',
+                        hintText: 'Nhập tin nhắn...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),

@@ -1,6 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_service.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/models/result.dart';
+import 'package:taskhub_mobile/features/auth/data/models/auth_models.dart';
 import '../models/user_models.dart';
 
 class UserRepository {
@@ -12,7 +13,7 @@ class UserRepository {
     final response = await _api.get<UserProfileResponse>(
       ApiConstants.me,
       parser: (json) =>
-          UserProfileResponse.fromJson(json['data'] as Map<String, dynamic>),
+          UserProfileResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -21,7 +22,7 @@ class UserRepository {
     final response = await _api.get<UserProfileResponse>(
       ApiConstants.userById(userId),
       parser: (json) =>
-          UserProfileResponse.fromJson(json['data'] as Map<String, dynamic>),
+          UserProfileResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -32,7 +33,7 @@ class UserRepository {
       ApiConstants.me,
       data: request.toJson(),
       parser: (json) =>
-          UserProfileResponse.fromJson(json['data'] as Map<String, dynamic>),
+          UserProfileResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -53,5 +54,13 @@ class UserRepository {
         'newPassword': newPassword,
       },
     );
+  }
+
+  Future<Result<AuthResponse>> switchRole() async {
+    final response = await _api.post<AuthResponse>(
+      ApiConstants.switchRole,
+      parser: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
+    );
+    return response;
   }
 }

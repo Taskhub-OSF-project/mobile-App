@@ -19,15 +19,15 @@ import 'features/wallet/presentation/screens/wallet_screen.dart';
 import 'features/notification/presentation/screens/notification_screen.dart';
 import 'features/messaging/presentation/screens/conversation_list_screen.dart';
 import 'features/messaging/presentation/screens/chat_screen.dart';
+import 'features/search/presentation/screens/search_screen.dart';
 import 'shared/widgets/main_scaffold.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authNotifierProvider);
-
   return GoRouter(
     initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(ref),
     redirect: (context, state) {
+      final authState = ref.read(authNotifierProvider);
       final isAuth = authState.isAuthenticated;
       final isLoggingIn = state.matchedLocation == '/login';
       final isRegistering = state.matchedLocation == '/register';
@@ -137,6 +137,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/notifications',
             builder: (context, state) => const NotificationScreen(),
+          ),
+          GoRoute(
+            path: '/search',
+            builder: (context, state) => const SearchScreen(),
           ),
           GoRoute(
             path: '/messages',

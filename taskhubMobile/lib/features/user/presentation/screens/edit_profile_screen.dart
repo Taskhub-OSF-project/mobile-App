@@ -21,14 +21,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late TextEditingController _bioController;
   late TextEditingController _phoneController;
   late TextEditingController _titleController;
-  late TextEditingController _availabilityController;
   late TextEditingController _skillsController;
   late TextEditingController _languagesController;
   late TextEditingController _portfolioController;
   DateTime? _dateOfBirth;
 
-  bool _isLoading = false;
   bool _isSaving = false;
+  String? _error;
 
   @override
   void initState() {
@@ -40,8 +39,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _bioController = TextEditingController(text: user?.bio ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
     _titleController = TextEditingController(text: user?.title ?? '');
-    _availabilityController =
-        TextEditingController(text: user?.availability ?? '');
     _skillsController =
         TextEditingController(text: user?.skills?.join(', ') ?? '');
     _languagesController =
@@ -50,15 +47,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         TextEditingController(text: user?.portfolioUrl ?? '');
     if (user?.dateOfBirth != null) {
       _dateOfBirth = DateTime.tryParse(user!.dateOfBirth!);
-    }
-    _isLoading = true;
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    await ref.read(authNotifierProvider.notifier).refreshProfile();
-    if (mounted) {
-      setState(() => _isLoading = false);
     }
   }
 
@@ -70,7 +58,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _bioController.dispose();
     _phoneController.dispose();
     _titleController.dispose();
-    _availabilityController.dispose();
     _skillsController.dispose();
     _languagesController.dispose();
     _portfolioController.dispose();
@@ -104,48 +91,47 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSaving = true);
 
-    final request = UserProfileUpdateRequest(
-      fullName: _nameController.text.trim(),
-      university: _universityController.text.trim().isEmpty
-          ? null
-          : _universityController.text.trim(),
-      major:
-          _majorController.text.trim().isEmpty ? null : _majorController.text.trim(),
-      bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
-      phone: _phoneController.text.trim().isEmpty
-          ? null
-          : _phoneController.text.trim(),
-      title: _titleController.text.trim().isEmpty
-          ? null
-          : _titleController.text.trim(),
-      availability: _availabilityController.text.trim().isEmpty
-          ? null
-          : _availabilityController.text.trim(),
-      skills: _parseCommaSeparated(_skillsController.text),
-      languages: _parseCommaSeparated(_languagesController.text),
-      portfolioUrl: _portfolioController.text.trim().isEmpty
-          ? null
-          : _portfolioController.text.trim(),
-      dateOfBirth: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : null,
-    );
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
 
-    final repo = ref.read(userRepositoryProvider);
-    final result = await repo.updateProfile(request);
-
-    if (result.isSuccess && mounted) {
-      await ref.read(authNotifierProvider.notifier).refreshProfile();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
+    try {
+      final request = UserProfileUpdateRequest(
+        fullName: _nameController.text.trim(),
+        university: _universityController.text.trim().isNotEmpty ? _universityController.text.trim() : null,
+        major: _majorController.text.trim().isNotEmpty ? _majorController.text.trim() : null,
+        bio: _bioController.text.trim().isNotEmpty ? _bioController.text.trim() : null,
+        skills: _skillsController.text.trim().isNotEmpty ? _parseCommaSeparated(_skillsController.text) : null,
+        portfolioUrl: _portfolioController.text.trim().isNotEmpty ? _portfolioController.text.trim() : null,
+        phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        title: _titleController.text.trim().isNotEmpty ? _titleController.text.trim() : null,
+        languages: _languagesController.text.trim().isNotEmpty ? _parseCommaSeparated(_languagesController.text) : null,
+        dateOfBirth: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : null,
       );
-      context.pop();
-    } else if (mounted) {
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(result.error?.message ?? 'Failed to update profile')),
-      );
+
+      final repo = ref.read(userRepositoryProvider);
+      final result = await repo.updateProfile(request);
+
+      if (result.isSuccess) {
+        await ref.read(authNotifierProvider.notifier).refreshProfile();
+        if (mounted) {
+          context.pop();
+        }
+      } else {
+        setState(() {
+          _error = result.error?.message ?? 'Lưu hồ sơ thất bại';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Đã xảy ra lỗi: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -153,111 +139,149 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text('Chỉnh sửa hồ sơ'),
         actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _save,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Full Name'),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _universityController,
-                      decoration:
-                          const InputDecoration(labelText: 'University'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _majorController,
-                      decoration: const InputDecoration(labelText: 'Major'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _titleController,
-                      decoration:
-                          const InputDecoration(labelText: 'Professional Title'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _bioController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                          labelText: 'Bio', alignLabelWithHint: true),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(labelText: 'Phone'),
-                    ),
-                    const SizedBox(height: 16),
-                    GestureDetector(
-                      onTap: _selectDateOfBirth,
-                      child: AbsorbPointer(
-                        child: TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Date of Birth',
-                            prefixIcon: const Icon(Icons.cake_outlined),
-                            suffixIcon: const Icon(Icons.calendar_today_outlined),
-                          ),
-                          controller: TextEditingController(
-                            text: _dateOfBirth != null
-                                ? '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'
-                                : '',
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _availabilityController,
-                      decoration:
-                          const InputDecoration(labelText: 'Availability'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _skillsController,
-                      decoration: const InputDecoration(
-                          labelText: 'Skills (comma-separated)'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _languagesController,
-                      decoration: const InputDecoration(
-                          labelText: 'Languages (comma-separated)'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _portfolioController,
-                      decoration:
-                          const InputDecoration(labelText: 'Portfolio URL'),
-                    ),
-                  ],
+          if (_isSaving)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
+            )
+          else
+            TextButton(
+              onPressed: _save,
+              child: const Text('Lưu',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_error != null) ...[
+                ErrorDisplay(message: _error!),
+                const SizedBox(height: 16),
+              ],
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Họ và tên *',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Vui lòng nhập họ và tên';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Chức danh',
+                  prefixIcon: Icon(Icons.work_outline),
+                  hintText: 'VD: Sinh viên IT, Lập trình viên Flutter',
+                ),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: _selectDateOfBirth,
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Ngày sinh',
+                    prefixIcon: Icon(Icons.calendar_today_outlined),
+                  ),
+                  child: Text(
+                    _dateOfBirth == null ? 'Chọn ngày sinh' : _formatDate(_dateOfBirth!),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Số điện thoại',
+                  prefixIcon: Icon(Icons.phone_outlined),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Học vấn',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _universityController,
+                decoration: const InputDecoration(
+                  labelText: 'Trường đại học',
+                  prefixIcon: Icon(Icons.account_balance_outlined),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _majorController,
+                decoration: const InputDecoration(
+                  labelText: 'Chuyên ngành',
+                  prefixIcon: Icon(Icons.menu_book_outlined),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Thông tin thêm',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _bioController,
+                decoration: const InputDecoration(
+                  labelText: 'Giới thiệu bản thân',
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 4,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _skillsController,
+                decoration: const InputDecoration(
+                  labelText: 'Kỹ năng (phân cách bằng dấu phẩy)',
+                  prefixIcon: Icon(Icons.psychology_outlined),
+                  hintText: 'VD: Flutter, React, Tiếng Anh',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _languagesController,
+                decoration: const InputDecoration(
+                  labelText: 'Ngôn ngữ (phân cách bằng dấu phẩy)',
+                  prefixIcon: Icon(Icons.language_outlined),
+                  hintText: 'VD: Tiếng Anh, Tiếng Việt',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _portfolioController,
+                decoration: const InputDecoration(
+                  labelText: 'Đường dẫn Portfolio',
+                  prefixIcon: Icon(Icons.link_outlined),
+                ),
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

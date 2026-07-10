@@ -15,8 +15,32 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      context.go('/login');
+    Future.microtask(() async {
+      print('Splash: Starting init');
+      try {
+        print('Splash: Calling checkAuthStatus');
+        await ref
+            .read(authNotifierProvider.notifier)
+            .checkAuthStatus()
+            .timeout(const Duration(seconds: 5));
+            
+        print('Splash: checkAuthStatus completed');
+        if (!mounted) return;
+        final isAuthenticated = ref.read(authNotifierProvider).isAuthenticated;
+        
+        print('Splash: isAuthenticated = $isAuthenticated');
+        if (isAuthenticated) {
+          print('Splash: Routing to /home');
+          context.go('/home');
+        } else {
+          print('Splash: Routing to /login');
+          context.go('/login');
+        }
+      } catch (e) {
+        print('Splash: Exception caught: $e');
+        if (!mounted) return;
+        context.go('/login');
+      }
     });
   }
 

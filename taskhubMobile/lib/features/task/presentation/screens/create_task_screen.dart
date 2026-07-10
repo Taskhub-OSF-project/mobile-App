@@ -25,14 +25,14 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   bool _isLoading = false;
 
   final _categories = [
-    'Programming',
-    'Design',
-    'Writing',
+    'Lập trình',
+    'Thiết kế',
+    'Viết lách',
     'Marketing',
-    'Data Entry',
-    'Research',
-    'Translation',
-    'Other',
+    'Nhập liệu',
+    'Nghiên cứu',
+    'Dịch thuật',
+    'Khác',
   ];
 
   @override
@@ -89,7 +89,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
     if (criteria.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least one acceptance criterion')),
+        const SnackBar(content: Text('Vui lòng thêm ít nhất một tiêu chí nghiệm thu')),
       );
       return;
     }
@@ -110,13 +110,13 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
     if (result.isSuccess && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Task created successfully!')),
+        const SnackBar(content: Text('Đăng công việc thành công!')),
       );
       context.pop();
     } else if (mounted) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.error?.message ?? 'Failed to create task')),
+        SnackBar(content: Text(result.error?.message ?? 'Đăng công việc thất bại')),
       );
     }
   }
@@ -125,7 +125,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Task'),
+        title: const Text('Đăng công việc'),
       ),
       body: LoadingOverlay(
         isLoading: _isLoading,
@@ -140,11 +140,11 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   controller: _titleController,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
-                    labelText: 'Task Title',
-                    hintText: 'e.g., Build a Flutter app login screen',
+                    labelText: 'Tiêu đề công việc *',
+                    hintText: 'VD: Tạo trang đăng nhập Flutter',
                   ),
                   validator: (v) =>
-                      v == null || v.isEmpty ? 'Title is required' : null,
+                      v == null || v.trim().isEmpty ? 'Vui lòng nhập tiêu đề' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -152,18 +152,18 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   maxLines: 4,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'Describe the task in detail...',
+                    labelText: 'Mô tả chi tiết *',
+                    hintText: 'Mô tả chi tiết công việc...',
                     alignLabelWithHint: true,
                   ),
                   validator: (v) =>
-                      v == null || v.isEmpty ? 'Description is required' : null,
+                      v == null || v.trim().isEmpty ? 'Vui lòng nhập mô tả' : null,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _selectedCategory,
                   decoration: const InputDecoration(
-                    labelText: 'Category',
+                    labelText: 'Danh mục',
                   ),
                   items: _categories
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -175,15 +175,15 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   controller: _budgetController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText: 'Budget (VND)',
-                    hintText: 'e.g., 500000',
+                    labelText: 'Ngân sách (VND) *',
+                    hintText: 'VD: 500000',
                     prefixText: '',
                     suffixText: 'VND',
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Budget is required';
-                    if (double.tryParse(v) == null) return 'Enter a valid number';
-                    if (double.parse(v) < 1) return 'Budget must be at least 1';
+                    if (v == null || v.trim().isEmpty) return 'Vui lòng nhập ngân sách';
+                    if (double.tryParse(v.trim()) == null) return 'Vui lòng nhập số hợp lệ';
+                    if (double.parse(v.trim()) < 1) return 'Ngân sách phải lớn hơn 0';
                     return null;
                   },
                 ),
@@ -192,7 +192,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   onTap: _selectDeadline,
                   child: InputDecorator(
                     decoration: const InputDecoration(
-                      labelText: 'Deadline',
+                      labelText: 'Hạn chót',
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -210,7 +210,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Acceptance Criteria',
+                      'Tiêu chí nghiệm thu',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -218,7 +218,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                     TextButton.icon(
                       onPressed: _addCriterion,
                       icon: const Icon(Icons.add, size: 18),
-                      label: const Text('Add'),
+                      label: const Text('Thêm'),
                     ),
                   ],
                 ),
@@ -232,7 +232,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                           child: TextFormField(
                             controller: entry.value,
                             decoration: InputDecoration(
-                              hintText: 'Criterion ${entry.key + 1}',
+                              hintText: 'Tiêu chí ${entry.key + 1}',
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 12),
                             ),
@@ -253,9 +253,10 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _createTask,
-                    child: const Text('Create Task'),
+                    child: const Text('Đăng công việc', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

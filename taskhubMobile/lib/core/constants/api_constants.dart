@@ -25,6 +25,7 @@ class ApiConstants {
   static String userById(int id) => '$apiPrefix/users/$id';
   static const String changePassword = '$apiPrefix/users/change-password';
   static const String setAvailability = '$apiPrefix/users/me/availability';
+  static const String switchRole = '$apiPrefix/users/switch-role';
 
   // Tasks
   static const String tasks = '$apiPrefix/tasks';

@@ -19,9 +19,11 @@ class ProfileScreen extends ConsumerWidget {
       );
     }
 
+    final isHirer = user.isHirer;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('Hồ sơ'),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
@@ -81,7 +83,7 @@ class ProfileScreen extends ConsumerWidget {
                         size: 16, color: AppTheme.success),
                   const SizedBox(width: 4),
                   Text(
-                    user.role ?? '',
+                    user.role == 'HIRER' ? 'Người thuê' : (user.role == 'STUDENT' ? 'Sinh viên' : ''),
                     style: TextStyle(
                       color: user.isVerified == true
                           ? AppTheme.success
@@ -99,6 +101,61 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // Availability Toggle & Role Switch
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Trạng thái sẵn sàng'),
+                    subtitle: Text(user.isAvailable == true ? 'Đang nhận việc' : 'Không nhận việc'),
+                    value: user.isAvailable == true,
+                    activeColor: AppTheme.primary,
+                    onChanged: (val) async {
+                      final repo = ref.read(userRepositoryProvider);
+                      final res = await repo.setAvailability(val);
+                      if (res.isSuccess) {
+                        ref.read(authNotifierProvider.notifier).refreshProfile();
+                      }
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.swap_horiz_outlined),
+                    title: const Text('Chuyển đổi vai trò'),
+                    subtitle: Text('Đổi sang ${isHirer ? "Sinh viên" : "Người thuê"}'),
+                    onTap: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Chuyển đổi vai trò'),
+                          content: Text('Bạn có chắc muốn chuyển đổi vai trò sang ${isHirer ? "Sinh viên" : "Người thuê"}?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Hủy'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Chuyển đổi'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        final success = await ref.read(authNotifierProvider.notifier).switchRole();
+                        if (success && context.mounted) {
+                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chuyển đổi vai trò thành công')));
+                        } else if (context.mounted) {
+                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ref.read(authNotifierProvider).errorMessage ?? 'Chuyển đổi vai trò thất bại')));
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // Stats
             Card(
               child: Padding(
@@ -107,24 +164,26 @@ class ProfileScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _StatColumn(
-                      label: 'Tasks Done',
-                      value:
-                          '${user.completedTasksAsFreelancer ?? user.completedTasksAsHirer ?? 0}',
+                      label: isHirer ? 'Đã đăng' : 'Hoàn thành',
+                      value: isHirer 
+                          ? '${user.completedTasksAsHirer ?? 0}'
+                          : '${user.completedTasksAsFreelancer ?? 0}',
                     ),
                     Container(
                         width: 1, height: 40, color: AppTheme.border),
                     _StatColumn(
-                      label: 'Rating',
-                      value: user.averageRatingAsFreelancer
-                              ?.toStringAsFixed(1) ??
-                          '-',
+                      label: 'Đánh giá',
+                      value: isHirer
+                          ? (user.averageRatingAsHirer?.toStringAsFixed(1) ?? '-')
+                          : (user.averageRatingAsFreelancer?.toStringAsFixed(1) ?? '-'),
                     ),
                     Container(
                         width: 1, height: 40, color: AppTheme.border),
                     _StatColumn(
-                      label: 'Reviews',
-                      value:
-                          '${user.totalReviewsAsFreelancer ?? user.totalReviewsAsHirer ?? 0}',
+                      label: 'Nhận xét',
+                      value: isHirer
+                          ? '${user.totalReviewsAsHirer ?? 0}'
+                          : '${user.totalReviewsAsFreelancer ?? 0}',
                     ),
                   ],
                 ),
@@ -139,49 +198,49 @@ class ProfileScreen extends ConsumerWidget {
                   if (user.university != null)
                     _ProfileTile(
                       icon: Icons.account_balance_outlined,
-                      label: 'University',
+                      label: 'Trường đại học',
                       value: user.university!,
                     ),
                   if (user.major != null)
                     _ProfileTile(
                       icon: Icons.menu_book_outlined,
-                      label: 'Major',
+                      label: 'Chuyên ngành',
                       value: user.major!,
                     ),
                   if (user.age != null)
                     _ProfileTile(
                       icon: Icons.cake_outlined,
-                      label: 'Age',
-                      value: '${user.age} years old',
+                      label: 'Tuổi',
+                      value: '${user.age} tuổi',
                     ),
                   if (user.dateOfBirth != null)
                     _ProfileTile(
                       icon: Icons.calendar_today_outlined,
-                      label: 'Date of Birth',
+                      label: 'Ngày sinh',
                       value: user.dateOfBirth!,
                     ),
                   if (user.title != null)
                     _ProfileTile(
                       icon: Icons.work_outline,
-                      label: 'Title',
+                      label: 'Chức danh',
                       value: user.title!,
                     ),
                   if (user.bio != null)
                     _ProfileTile(
                       icon: Icons.info_outline,
-                      label: 'Bio',
+                      label: 'Giới thiệu',
                       value: user.bio!,
                     ),
                   if (user.skills != null && user.skills!.isNotEmpty)
                     _ProfileTile(
                       icon: Icons.psychology_outlined,
-                      label: 'Skills',
+                      label: 'Kỹ năng',
                       value: user.skills!.join(', '),
                     ),
                   if (user.languages != null && user.languages!.isNotEmpty)
                     _ProfileTile(
                       icon: Icons.language_outlined,
-                      label: 'Languages',
+                      label: 'Ngôn ngữ',
                       value: user.languages!.join(', '),
                     ),
                 ],
@@ -195,21 +254,21 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.wallet_outlined),
-                    title: const Text('Wallet'),
+                    title: const Text('Ví'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => context.push('/wallet'),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.chat_outlined),
-                    title: const Text('Messages'),
+                    title: const Text('Tin nhắn'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => context.push('/messages'),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.lock_outlined),
-                    title: const Text('Change Password'),
+                    title: const Text('Đổi mật khẩu'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       // TODO: Change password
@@ -218,26 +277,26 @@ class ProfileScreen extends ConsumerWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.logout, color: AppTheme.error),
-                    title: const Text('Logout',
+                    title: const Text('Đăng xuất',
                         style: TextStyle(color: AppTheme.error)),
                     onTap: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Logout'),
+                          title: const Text('Đăng xuất'),
                           content:
-                              const Text('Are you sure you want to logout?'),
+                              const Text('Bạn có chắc chắn muốn đăng xuất không?'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
+                              child: const Text('Hủy'),
                             ),
                             ElevatedButton(
                               onPressed: () => Navigator.pop(context, true),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.error,
                               ),
-                              child: const Text('Logout'),
+                              child: const Text('Đăng xuất'),
                             ),
                           ],
                         ),

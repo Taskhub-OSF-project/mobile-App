@@ -16,7 +16,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  List<TaskResponse> _availableTasks = [];
+  List<TaskResponse> _tasksList = [];
   bool _isLoading = true;
   String? _error;
 
@@ -31,18 +31,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _isLoading = true;
       _error = null;
     });
-    final result = await ref.read(taskRepositoryProvider).getAvailableTasks();
-    if (result.isSuccess) {
-      final tasks = result.data?.content ?? [];
-      setState(() {
-        _availableTasks = tasks.take(5).toList();
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _error = result.error?.message ?? 'Failed to load tasks';
-        _isLoading = false;
-      });
+
+    try {
+      // Need to delay context/provider reading slightly if doing it right on init
+      // but inside a stateful widget ref.read is fine
+      final user = ref.read(currentUserProvider);
+      final repo = ref.read(taskRepositoryProvider);
+      
+      if (user != null && user.isHirer) {
+        final result = await repo.getMyTasks();
+        if (result.isSuccess && mounted) {
+          setState(() {
+            _tasksList = (result.data?.content ?? []).take(5).toList();
+            _isLoading = false;
+          });
+        } else if (mounted) {
+          setState(() {
+            _error = result.error?.message ?? 'Không thể tải dữ liệu';
+            _isLoading = false;
+          });
+        }
+      } else {
+        final result = await repo.getAvailableTasks();
+        if (result.isSuccess && mounted) {
+          setState(() {
+            _tasksList = (result.data?.content ?? []).take(5).toList();
+            _isLoading = false;
+          });
+        } else if (mounted) {
+          setState(() {
+            _error = result.error?.message ?? 'Không thể tải dữ liệu';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Đã xảy ra lỗi: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -56,11 +85,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hello, ${user?.fullName ?? 'there'}!',
+              'Xin chào, ${user?.fullName ?? 'bạn'}!',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              user?.role ?? '',
+              user?.role == 'HIRER' ? 'Người thuê' : (user?.role == 'STUDENT' ? 'Sinh viên' : ''),
               style: TextStyle(
                 fontSize: 12,
                 color: AppTheme.textSecondary,
@@ -70,9 +99,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => context.push('/notifications'),
+          Consumer(
+            builder: (context, ref, child) {
+              final unreadCountAsync = ref.watch(notificationUnreadCountProvider);
+              final unreadCount = unreadCountAsync.value ?? 0;
+              return IconButton(
+                icon: Badge(
+                  isLabelVisible: unreadCount > 0,
+                  label: Text(unreadCount.toString()),
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                onPressed: () => context.push('/notifications'),
+              );
+            },
           ),
         ],
       ),
@@ -85,26 +124,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Quick stats
-              _buildStatsCard(),
+              _buildStatsCard(user),
+              const SizedBox(height: 24),
+
+              // Search Bar Redirect
+              GestureDetector(
+                onTap: () => context.push('/search'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Text('Tìm kiếm công việc, freelancer...',
+                          style: TextStyle(color: Colors.grey[600])),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
 
               // Quick actions
               _buildQuickActions(context, user),
               const SizedBox(height: 24),
 
-              // Available tasks
+              // Task List section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Available Tasks',
+                    user?.isHirer == true ? 'Công việc gần đây' : 'Công việc có sẵn',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
                   TextButton(
-                    onPressed: () => context.push('/tasks/available'),
-                    child: const Text('See all'),
+                    onPressed: () => context.push(user?.isHirer == true ? '/tasks' : '/tasks/available'),
+                    child: const Text('Xem tất cả'),
                   ),
                 ],
               ),
@@ -117,14 +177,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   message: _error!,
                   onRetry: _loadData,
                 )
-              else if (_availableTasks.isEmpty)
+              else if (_tasksList.isEmpty)
                 const EmptyState(
                   icon: Icons.assignment_outlined,
-                  title: 'No available tasks',
-                  subtitle: 'Check back later for new opportunities',
+                  title: 'Không có công việc',
+                  subtitle: 'Hãy quay lại sau để xem thông tin mới',
                 )
               else
-                ..._availableTasks.map((task) => _TaskCard(task: task)),
+                ..._tasksList.map((task) => _TaskCard(task: task)),
             ],
           ),
         ),
@@ -132,8 +192,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildStatsCard() {
-    final user = ref.watch(currentUserProvider);
+  Widget _buildStatsCard(dynamic user) {
+    final isHirer = user?.isHirer ?? false;
 
     return Card(
       child: Container(
@@ -153,7 +213,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Wallet Balance',
+                  'Số dư ví',
                   style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 IconButton(
@@ -175,15 +235,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Expanded(
                   child: _StatItem(
-                    label: 'As Freelancer',
-                    value: '${user?.completedTasksAsFreelancer ?? 0}',
+                    label: isHirer ? 'Đã đăng' : 'Hoàn thành',
+                    value: isHirer 
+                      ? '${user?.completedTasksAsHirer ?? 0}' 
+                      : '${user?.completedTasksAsFreelancer ?? 0}',
                   ),
                 ),
                 Expanded(
                   child: _StatItem(
-                    label: 'Rating',
-                    value: user?.averageRatingAsFreelancer?.toStringAsFixed(1) ??
-                        '-',
+                    label: 'Đánh giá',
+                    value: isHirer 
+                      ? (user?.averageRatingAsHirer?.toStringAsFixed(1) ?? '-')
+                      : (user?.averageRatingAsFreelancer?.toStringAsFixed(1) ?? '-'),
                   ),
                 ),
               ],
@@ -198,38 +261,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isHirer = user?.isHirer ?? false;
     final isStudent = user?.isStudent ?? false;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        if (isHirer || isStudent)
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          if (isHirer || isStudent)
+            _QuickAction(
+              icon: Icons.search_outlined,
+              label: 'Tìm\nviệc',
+              onTap: () => context.push('/tasks/available'),
+            ),
+          if (isHirer) ...[
+            _QuickAction(
+              icon: Icons.add_box_outlined,
+              label: 'Đăng\nviệc',
+              onTap: () => context.push('/tasks/create'),
+            ),
+            _QuickAction(
+              icon: Icons.assignment_outlined,
+              label: 'Việc\ncủa tôi',
+              onTap: () => context.push('/tasks'),
+            ),
+          ],
           _QuickAction(
-            icon: Icons.add_circle_outline,
-            label: 'Available\nTasks',
-            onTap: () => context.push('/tasks/available'),
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Ví',
+            onTap: () => context.push('/wallet'),
           ),
-        if (isHirer) ...[
           _QuickAction(
-            icon: Icons.add_box_outlined,
-            label: 'Create\nTask',
-            onTap: () => context.push('/tasks/create'),
-          ),
-          _QuickAction(
-            icon: Icons.assignment_outlined,
-            label: 'My\nTasks',
-            onTap: () => context.push('/tasks'),
+            icon: Icons.chat_outlined,
+            label: 'Tin\nnhắn',
+            onTap: () => context.push('/messages'),
           ),
         ],
-        _QuickAction(
-          icon: Icons.wallet_outlined,
-          label: 'Wallet',
-          onTap: () => context.push('/wallet'),
-        ),
-        _QuickAction(
-          icon: Icons.chat_outlined,
-          label: 'Messages',
-          onTap: () => context.push('/messages'),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -274,24 +340,27 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        child: Column(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: AppTheme.primary),
             ),
-            child: Icon(icon, color: AppTheme.primary),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

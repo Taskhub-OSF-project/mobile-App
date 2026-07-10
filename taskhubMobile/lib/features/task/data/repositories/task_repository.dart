@@ -1,7 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_service.dart';
-import '../../../../core/network/api_exception.dart';
-import '../../../../core/models/api_response.dart';
+import '../../../../core/models/result.dart';
+import 'package:taskhub_mobile/core/models/page_response.dart';
 import '../models/task_models.dart';
 
 class TaskRepository {
@@ -13,7 +13,7 @@ class TaskRepository {
     final response = await _api.get<TaskResponse>(
       ApiConstants.taskById(id),
       parser: (json) =>
-          TaskResponse.fromJson(json['data'] as Map<String, dynamic>),
+          TaskResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -35,7 +35,7 @@ class TaskRepository {
         'sortDir': sortDir,
       },
       parser: (json) => PageResponse<TaskResponse>.fromJson(
-        json['data'] as Map<String, dynamic>,
+        json as Map<String, dynamic>,
         (e) => TaskResponse.fromJson(e as Map<String, dynamic>),
       ),
     );
@@ -57,7 +57,7 @@ class TaskRepository {
         'sortDir': sortDir,
       },
       parser: (json) => PageResponse<TaskResponse>.fromJson(
-        json['data'] as Map<String, dynamic>,
+        json as Map<String, dynamic>,
         (e) => TaskResponse.fromJson(e as Map<String, dynamic>),
       ),
     );
@@ -69,7 +69,7 @@ class TaskRepository {
       ApiConstants.tasks,
       data: request.toJson(),
       parser: (json) =>
-          TaskResponse.fromJson(json['data'] as Map<String, dynamic>),
+          TaskResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -79,7 +79,7 @@ class TaskRepository {
       ApiConstants.patchTask(id),
       data: request.toJson(),
       parser: (json) =>
-          TaskResponse.fromJson(json['data'] as Map<String, dynamic>),
+          TaskResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -92,7 +92,7 @@ class TaskRepository {
     final response = await _api.post<TaskResponse>(
       ApiConstants.lockTask(id),
       parser: (json) =>
-          TaskResponse.fromJson(json['data'] as Map<String, dynamic>),
+          TaskResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -101,7 +101,7 @@ class TaskRepository {
     final response = await _api.post<TaskResponse>(
       ApiConstants.publishTask(id),
       parser: (json) =>
-          TaskResponse.fromJson(json['data'] as Map<String, dynamic>),
+          TaskResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -110,7 +110,7 @@ class TaskRepository {
     final response = await _api.post<TaskResponse>(
       ApiConstants.completeTask(id),
       parser: (json) =>
-          TaskResponse.fromJson(json['data'] as Map<String, dynamic>),
+          TaskResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -133,7 +133,7 @@ class TaskRepository {
       ApiConstants.applyToTask(taskId),
       data: {'coverLetter': coverLetter},
       parser: (json) =>
-          ApplicationResponse.fromJson(json['data'] as Map<String, dynamic>),
+          ApplicationResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -151,7 +151,7 @@ class TaskRepository {
       ApiConstants.taskApplications(taskId),
       queryParameters: {'page': page, 'size': size},
       parser: (json) => PageResponse<ApplicationResponse>.fromJson(
-        json['data'] as Map<String, dynamic>,
+        json as Map<String, dynamic>,
         (e) => ApplicationResponse.fromJson(e as Map<String, dynamic>),
       ),
     );
@@ -166,21 +166,38 @@ class TaskRepository {
       ApiConstants.myApplications,
       queryParameters: {'page': page, 'size': size},
       parser: (json) => PageResponse<ApplicationResponse>.fromJson(
-        json['data'] as Map<String, dynamic>,
+        json as Map<String, dynamic>,
         (e) => ApplicationResponse.fromJson(e as Map<String, dynamic>),
       ),
     );
     return response;
   }
 
-  Future<Result<void>> submitWork(
+  Future<Result<SubmissionResponse>> submitWork(
       int taskId, String? notes, List<String>? fileUrls) async {
-    return _api.post<void>(
+    return _api.post<SubmissionResponse>(
       ApiConstants.submitTask(taskId),
       data: {
         'notes': notes,
         if (fileUrls != null) 'fileUrl': fileUrls.join(','),
       },
+      parser: (json) =>
+          SubmissionResponse.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<Result<LatestSubmissionResultResponse>> getLatestSubmission(int taskId) async {
+    return _api.get<LatestSubmissionResultResponse>(
+      '${ApiConstants.submitTask(taskId)}/latest',
+      parser: (json) => LatestSubmissionResultResponse.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<Result<SubmissionAIResult>> precheckSubmission(int taskId, SubmissionRequest request) async {
+    return _api.post<SubmissionAIResult>(
+      '${ApiConstants.submitTask(taskId)}/precheck',
+      data: request.toJson(),
+      parser: (json) => SubmissionAIResult.fromJson(json as Map<String, dynamic>),
     );
   }
 

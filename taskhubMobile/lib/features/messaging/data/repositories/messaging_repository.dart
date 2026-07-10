@@ -1,7 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_service.dart';
-import '../../../../core/network/api_exception.dart';
-import '../../../../core/models/api_response.dart';
+import '../../../../core/models/result.dart';
+import 'package:taskhub_mobile/core/models/page_response.dart';
 import '../models/messaging_models.dart';
 
 class MessagingRepository {
@@ -17,7 +17,7 @@ class MessagingRepository {
       ApiConstants.conversationsPaged,
       queryParameters: {'page': page, 'size': size},
       parser: (json) => PageResponse<ConversationResponse>.fromJson(
-        json['data'] as Map<String, dynamic>,
+        json as Map<String, dynamic>,
         (e) => ConversationResponse.fromJson(e as Map<String, dynamic>),
       ),
     );
@@ -28,7 +28,7 @@ class MessagingRepository {
     final response = await _api.post<ConversationResponse>(
       ApiConstants.createConversation(taskId),
       parser: (json) =>
-          ConversationResponse.fromJson(json['data'] as Map<String, dynamic>),
+          ConversationResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -39,7 +39,7 @@ class MessagingRepository {
       ApiConstants.sendMessage(conversationId),
       data: {'content': content},
       parser: (json) =>
-          MessageResponse.fromJson(json['data'] as Map<String, dynamic>),
+          MessageResponse.fromJson(json as Map<String, dynamic>),
     );
     return response;
   }
@@ -53,7 +53,7 @@ class MessagingRepository {
       ApiConstants.getMessages(conversationId),
       queryParameters: {'page': page, 'size': size},
       parser: (json) => PageResponse<MessageResponse>.fromJson(
-        json['data'] as Map<String, dynamic>,
+        json as Map<String, dynamic>,
         (e) => MessageResponse.fromJson(e as Map<String, dynamic>),
       ),
     );
@@ -68,7 +68,7 @@ class MessagingRepository {
     final response = await _api.get<int>(
       ApiConstants.unreadMessageCount,
       parser: (json) {
-        final data = json['data'];
+        final data = json;
         if (data is Map) {
           return (data['unreadCount'] ?? 0) as int;
         }

@@ -31,21 +31,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    bool success;
-    if (_loginByPhone) {
-      success = await ref.read(authNotifierProvider.notifier).loginByPhone(
-            _phoneController.text.trim(),
-            _passwordController.text,
-          );
-    } else {
-      success = await ref.read(authNotifierProvider.notifier).login(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
-    }
+    try {
+      bool success;
+      if (_loginByPhone) {
+        success = await ref.read(authNotifierProvider.notifier).loginByPhone(
+              _phoneController.text.trim(),
+              _passwordController.text,
+            );
+      } else {
+        success = await ref.read(authNotifierProvider.notifier).login(
+              _emailController.text.trim(),
+              _passwordController.text,
+            );
+      }
 
-    if (success && mounted) {
-      context.go('/home');
+      if (success && mounted) {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đăng nhập thất bại: $e')),
+        );
+      }
+      ref.read(authNotifierProvider.notifier).clearError();
     }
   }
 
@@ -82,7 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Welcome back',
+                    'Chào mừng trở lại',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -90,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to continue',
+                    'Đăng nhập để tiếp tục',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppTheme.textSecondary,
                         ),
@@ -137,7 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             child: Text(
-                              'Phone',
+                              'Số điện thoại',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontWeight: _loginByPhone ? FontWeight.bold : FontWeight.normal,
@@ -190,10 +199,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return 'Vui lòng nhập email của bạn';
                         }
                         if (!value.contains('@')) {
-                          return 'Please enter a valid email';
+                          return 'Vui lòng nhập email hợp lệ';
                         }
                         return null;
                       },
@@ -204,12 +213,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
-                        labelText: 'Phone',
+                        labelText: 'Số điện thoại',
                         prefixIcon: Icon(Icons.phone_outlined),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your phone number';
+                          return 'Vui lòng nhập số điện thoại của bạn';
                         }
                         return null;
                       },
@@ -221,7 +230,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _login(),
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: 'Mật khẩu',
                       prefixIcon: const Icon(Icons.lock_outlined),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -236,7 +245,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
+                        return 'Vui lòng nhập mật khẩu của bạn';
                       }
                       return null;
                     },
@@ -246,7 +255,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () => context.go('/forgot-password'),
-                      child: const Text('Forgot password?'),
+                      child: const Text('Quên mật khẩu?'),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -262,19 +271,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Sign In'),
+                        : const Text('Đăng nhập'),
                   ),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        "Chưa có tài khoản? ",
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                       TextButton(
                         onPressed: () => context.go('/register'),
-                        child: const Text('Sign Up'),
+                        child: const Text('Đăng ký'),
                       ),
                     ],
                   ),

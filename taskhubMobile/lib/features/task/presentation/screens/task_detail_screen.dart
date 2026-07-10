@@ -52,7 +52,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Task Details'),
+        title: const Text('Chi tiết công việc'),
         actions: [
           if (_task != null) ...[
             IconButton(
@@ -76,7 +76,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               : _task == null
                   ? const EmptyState(
                       icon: Icons.error_outline,
-                      title: 'Task not found',
+                      title: 'Không tìm thấy công việc',
                     )
                   : _buildContent(context, currentUser),
       bottomNavigationBar: _task != null ? _buildBottomBar(context) : null,
@@ -122,7 +122,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                     Expanded(
                       child: _InfoTile(
                         icon: Icons.attach_money,
-                        label: 'Budget',
+                        label: 'Ngân sách',
                         value: '${task.budget.toStringAsFixed(0)} VND',
                         valueColor: AppTheme.accent,
                       ),
@@ -135,7 +135,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                     Expanded(
                       child: _InfoTile(
                         icon: Icons.calendar_today,
-                        label: 'Deadline',
+                        label: 'Hạn chót',
                         value: task.deadline?.split('T').first ?? '-',
                         valueColor: AppTheme.warning,
                       ),
@@ -162,7 +162,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                     ),
                   ),
                   title: Text(task.hirerName),
-                  subtitle: const Text('Hirer'),
+                  subtitle: const Text('Người thuê'),
                   trailing: const Icon(Icons.chevron_right),
                 ),
               ),
@@ -171,7 +171,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
             // Description
             Text(
-              'Description',
+              'Mô tả chi tiết',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -184,7 +184,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             if (task.acceptanceCriteria != null &&
                 task.acceptanceCriteria!.isNotEmpty) ...[
               Text(
-                'Acceptance Criteria',
+                'Tiêu chí nghiệm thu',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -217,7 +217,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 task.applicants != null &&
                 task.applicants!.isNotEmpty) ...[
               Text(
-                'Applicants (${task.applicants!.length})',
+                'Ứng viên (${task.applicants!.length})',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -242,7 +242,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 12),
                               ),
-                              child: const Text('Accept'),
+                              child: const Text('Chấp nhận'),
                             )
                           : StatusBadge(status: app.status ?? 'PENDING'),
                     ),
@@ -254,6 +254,48 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showSubmitDialog() async {
+    final notesController = TextEditingController();
+    final linkController = TextEditingController();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nộp sản phẩm'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(labelText: 'Ghi chú (Tùy chọn)'),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: linkController,
+              decoration: const InputDecoration(labelText: 'Đường dẫn File (Tùy chọn)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Nộp')),
+        ],
+      )
+    );
+    if (confirm == true && mounted) {
+      final repo = ref.read(taskRepositoryProvider);
+      final notes = notesController.text.trim();
+      final link = linkController.text.trim();
+      final res = await repo.submitWork(widget.taskId, notes.isNotEmpty ? notes : null, link.isNotEmpty ? [link] : null);
+      if (res.isSuccess) {
+         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nộp sản phẩm thành công')));
+         _loadTask();
+      } else {
+         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.error?.message ?? 'Lỗi nộp sản phẩm')));
+      }
+    }
   }
 
   Widget _buildBottomBar(BuildContext context) {
@@ -289,7 +331,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                       await repo.lockTask(task.id);
                       _loadTask();
                     },
-                    child: const Text('Lock & Validate'),
+                    child: const Text('Khóa & Tự động duyệt'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -300,7 +342,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                       await repo.fundEscrow(task.id);
                       _loadTask();
                     },
-                    child: const Text('Fund Escrow'),
+                    child: const Text('Nạp Escrow'),
                   ),
                 ),
               ],
@@ -312,7 +354,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                       await repo.releaseEscrow(task.id);
                       _loadTask();
                     },
-                    child: const Text('Approve & Release'),
+                    child: const Text('Duyệt & Thanh toán'),
                   ),
                 ),
               if (status == 'SUBMITTED')
@@ -323,7 +365,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                       await repo.approveSubmission(task.id);
                       _loadTask();
                     },
-                    child: const Text('Approve Submission'),
+                    child: const Text('Duyệt bài nộp'),
                   ),
                 ),
             ],
@@ -332,10 +374,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               if (status == 'IN_PROGRESS')
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Navigate to submit screen
-                    },
-                    child: const Text('Submit Work'),
+                    onPressed: _showSubmitDialog,
+                    child: const Text('Nộp sản phẩm'),
                   ),
                 ),
             ],
@@ -348,17 +388,17 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                     final result = await repo.applyToTask(task.id, null);
                     if (result.isSuccess && mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Applied successfully!')),
+                        const SnackBar(content: Text('Ứng tuyển thành công!')),
                       );
-                    } else {
+                    } else if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content: Text(result.error?.message ??
-                                'Failed to apply')),
+                                'Ứng tuyển thất bại')),
                       );
                     }
                   },
-                  child: const Text('Apply for this Task'),
+                  child: const Text('Ứng tuyển'),
                 ),
               ),
             ],
