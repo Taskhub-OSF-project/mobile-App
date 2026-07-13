@@ -22,7 +22,7 @@ class FreelancerSearchCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+                backgroundColor: AppTheme.primary.withOpacity(0.1),
                 backgroundImage: freelancer.avatarUrl != null
                     ? NetworkImage(freelancer.avatarUrl!)
                     : null,

@@ -96,10 +96,10 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                           final notif = _notifications[index];
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            color: notif.isRead == true ? null : AppTheme.primary.withValues(alpha: 0.03),
+                            color: notif.isRead == true ? null : AppTheme.primary.withOpacity(0.03),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: _getColorForType(notif.type).withValues(alpha: 0.1),
+                                backgroundColor: _getColorForType(notif.type).withOpacity(0.1),
                                 child: Icon(_getIconForType(notif.type), color: _getColorForType(notif.type), size: 20),
                               ),
                               title: Text(notif.title, style: TextStyle(fontWeight: notif.isRead == true ? FontWeight.normal : FontWeight.bold)),

@@ -198,8 +198,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: tx.isPositive
-                    ? AppTheme.success.withValues(alpha: 0.1)
-                    : AppTheme.error.withValues(alpha: 0.1),
+                    ? AppTheme.success.withOpacity(0.1)
+                    : AppTheme.error.withOpacity(0.1),
                 child: Icon(
                   tx.isPositive ? Icons.arrow_downward : Icons.arrow_upward,
                   color: tx.isPositive ? AppTheme.success : AppTheme.error,

@@ -147,54 +147,54 @@ class StatusBadge extends StatelessWidget {
 
     switch (status.toUpperCase()) {
       case 'DRAFT':
-        bgColor = Colors.grey.shade100;
-        textColor = Colors.grey.shade700;
+        bgColor = const Color(0xFFEFF1F5); // Latte Mantle
+        textColor = const Color(0xFF6C6F85); // Latte Subtext0
         break;
       case 'LOCKED':
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade700;
+        bgColor = const Color(0xFFE8F4FD); // Light Blue
+        textColor = const Color(0xFF1E66F5); // Latte Blue
         break;
       case 'ESCROW_FUNDED':
-        bgColor = Colors.indigo.shade50;
-        textColor = Colors.indigo.shade700;
+        bgColor = const Color(0xFFF5EBFD); // Light Mauve
+        textColor = const Color(0xFF8839EF); // Latte Mauve
         break;
       case 'ACTIVE':
-        bgColor = Colors.green.shade50;
-        textColor = Colors.green.shade700;
+        bgColor = const Color(0xFFEAF6E8); // Light Green
+        textColor = const Color(0xFF40A02B); // Latte Green
         break;
       case 'IN_PROGRESS':
-        bgColor = Colors.orange.shade50;
-        textColor = Colors.orange.shade700;
+        bgColor = const Color(0xFFFFF0E6); // Light Peach
+        textColor = const Color(0xFFFE640B); // Latte Peach
         break;
       case 'SUBMITTED':
-        bgColor = Colors.amber.shade50;
-        textColor = Colors.amber.shade700;
+        bgColor = const Color(0xFFFDF7E7); // Light Yellow
+        textColor = const Color(0xFFDF8E1D); // Latte Yellow
         break;
       case 'COMPLETED':
-        bgColor = Colors.teal.shade50;
-        textColor = Colors.teal.shade700;
+        bgColor = const Color(0xFFE8F6F5); // Light Teal
+        textColor = const Color(0xFF179287); // Latte Teal
         break;
       case 'DISPUTED':
-        bgColor = Colors.red.shade50;
-        textColor = Colors.red.shade700;
+        bgColor = const Color(0xFFFCE8EC); // Light Red
+        textColor = const Color(0xFFD20F39); // Latte Red
         break;
       default:
-        bgColor = Colors.grey.shade100;
-        textColor = Colors.grey.shade700;
+        bgColor = const Color(0xFFEFF1F5);
+        textColor = const Color(0xFF6C6F85);
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         status.replaceAll('_', ' '),
         style: TextStyle(
           color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

@@ -171,7 +171,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           counterText: '',
                           filled: true,
                           fillColor: _controllers[index].text.isNotEmpty
-                              ? AppTheme.primary.withValues(alpha: 0.1)
+                              ? AppTheme.primary.withOpacity(0.1)
                               : Colors.grey[100],
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),

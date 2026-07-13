@@ -82,7 +82,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
         children: [
           CircleAvatar(
             radius: 48,
-            backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+            backgroundColor: AppTheme.primary.withOpacity(0.1),
             backgroundImage:
                 user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
             child: user.avatarUrl == null
@@ -172,7 +172,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                           .map((s) => Chip(
                                 label: Text(s),
                                 backgroundColor:
-                                    AppTheme.primary.withValues(alpha: 0.1),
+                                    AppTheme.primary.withOpacity(0.1),
                               ))
                           .toList(),
                     ),

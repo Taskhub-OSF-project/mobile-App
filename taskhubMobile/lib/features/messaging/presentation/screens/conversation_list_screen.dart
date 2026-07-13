@@ -87,7 +87,7 @@ class _ConversationTile extends StatelessWidget {
     return ListTile(
       onTap: () => context.push('/messages/${conversation.id}'),
       leading: CircleAvatar(
-        backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+        backgroundColor: AppTheme.primary.withOpacity(0.1),
         child: Text(
           (conversation.otherUserName ?? 'U')[0].toUpperCase(),
           style: const TextStyle(

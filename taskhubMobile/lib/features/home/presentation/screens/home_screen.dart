@@ -131,17 +131,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               GestureDetector(
                 onTap: () => context.push('/search'),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFEFF1F5), // Latte Mantle matching text fields
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, color: Colors.grey),
+                      const Icon(Icons.search, color: Color(0xFF9CA0B0)),
                       const SizedBox(width: 8),
-                      Text('Tìm kiếm công việc, freelancer...',
-                          style: TextStyle(color: Colors.grey[600])),
+                      const Text(
+                        'Tìm kiếm công việc, freelancer...',
+                        style: TextStyle(color: Color(0xFF9CA0B0), fontSize: 15),
+                      ),
                     ],
                   ),
                 ),
@@ -348,7 +350,7 @@ class _QuickAction extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.1),
+                color: AppTheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: AppTheme.primary),

@@ -36,7 +36,7 @@ class ReviewListWidget extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+                      backgroundColor: AppTheme.primary.withOpacity(0.1),
                       backgroundImage: review.reviewerAvatar != null
                           ? NetworkImage(review.reviewerAvatar!)
                           : null,

@@ -152,7 +152,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               child: Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+                    backgroundColor: AppTheme.primary.withOpacity(0.1),
                     child: Text(
                       task.hirerName.isNotEmpty
                           ? task.hirerName[0].toUpperCase()
@@ -312,7 +312,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

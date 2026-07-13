@@ -44,7 +44,7 @@ class ProfileScreen extends ConsumerWidget {
             // Avatar & basic info
             CircleAvatar(
               radius: 48,
-              backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+              backgroundColor: AppTheme.primary.withOpacity(0.1),
               backgroundImage:
                   user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
               child: user.avatarUrl == null
@@ -71,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: user.isVerified == true
-                    ? AppTheme.success.withValues(alpha: 0.1)
+                    ? AppTheme.success.withOpacity(0.1)
                     : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),

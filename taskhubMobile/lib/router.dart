@@ -5,6 +5,7 @@ import 'providers.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
+import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/auth/presentation/screens/forgot_password_screen.dart';
 import 'features/auth/presentation/screens/otp_verification_screen.dart';
 import 'features/auth/presentation/screens/reset_password_screen.dart';
@@ -32,7 +33,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggingIn = state.matchedLocation == '/login';
       final isRegistering = state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/';
-      final isAuthRoute = isLoggingIn || isRegistering || isSplash ||
+      final isOnboarding = state.matchedLocation == '/onboarding';
+      final isAuthRoute = isLoggingIn || isRegistering || isSplash || isOnboarding ||
           state.matchedLocation == '/forgot-password' ||
           state.matchedLocation == '/otp-verify' ||
           state.matchedLocation == '/reset-password';
@@ -46,7 +48,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      if (isAuth && (isLoggingIn || isRegistering || isSplash)) {
+      if (isAuth && (isLoggingIn || isRegistering || isSplash || isOnboarding)) {
         return '/home';
       }
 
@@ -56,6 +58,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/login',
