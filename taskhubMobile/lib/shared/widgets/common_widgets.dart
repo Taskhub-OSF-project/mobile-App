@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/app_theme.dart';
 
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
@@ -65,22 +67,25 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: Colors.grey[400]),
+            Icon(icon, size: 64, color: AppTheme.textTertiary),
             const SizedBox(height: 16),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: GoogleFonts.nunito(
+                color: AppTheme.textSecondary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
               textAlign: TextAlign.center,
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
               Text(
                 subtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[500],
-                    ),
+                style: GoogleFonts.nunito(
+                  color: AppTheme.textTertiary,
+                  fontSize: 13,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -147,54 +152,54 @@ class StatusBadge extends StatelessWidget {
 
     switch (status.toUpperCase()) {
       case 'DRAFT':
-        bgColor = const Color(0xFFEFF1F5); // Latte Mantle
-        textColor = const Color(0xFF6C6F85); // Latte Subtext0
+        bgColor = const Color(0xFF1E2D3D);
+        textColor = const Color(0xFF94A3B8);
         break;
       case 'LOCKED':
-        bgColor = const Color(0xFFE8F4FD); // Light Blue
-        textColor = const Color(0xFF1E66F5); // Latte Blue
+        bgColor = const Color(0xFF1A2B45);
+        textColor = const Color(0xFF60A5FA);
         break;
       case 'ESCROW_FUNDED':
-        bgColor = const Color(0xFFF5EBFD); // Light Mauve
-        textColor = const Color(0xFF8839EF); // Latte Mauve
+        bgColor = const Color(0xFF251A45);
+        textColor = const Color(0xFFA78BFA);
         break;
       case 'ACTIVE':
-        bgColor = const Color(0xFFEAF6E8); // Light Green
-        textColor = const Color(0xFF40A02B); // Latte Green
+        bgColor = const Color(0xFF0F2A1A);
+        textColor = const Color(0xFF34D399);
         break;
       case 'IN_PROGRESS':
-        bgColor = const Color(0xFFFFF0E6); // Light Peach
-        textColor = const Color(0xFFFE640B); // Latte Peach
+        bgColor = const Color(0xFF2A1A0F);
+        textColor = const Color(0xFFFB923C);
         break;
       case 'SUBMITTED':
-        bgColor = const Color(0xFFFDF7E7); // Light Yellow
-        textColor = const Color(0xFFDF8E1D); // Latte Yellow
+        bgColor = const Color(0xFF2A230F);
+        textColor = const Color(0xFFFBBF24);
         break;
       case 'COMPLETED':
-        bgColor = const Color(0xFFE8F6F5); // Light Teal
-        textColor = const Color(0xFF179287); // Latte Teal
+        bgColor = const Color(0xFF0F2028);
+        textColor = const Color(0xFF2DD4BF);
         break;
       case 'DISPUTED':
-        bgColor = const Color(0xFFFCE8EC); // Light Red
-        textColor = const Color(0xFFD20F39); // Latte Red
+        bgColor = const Color(0xFF2A0F18);
+        textColor = const Color(0xFFF87171);
         break;
       default:
-        bgColor = const Color(0xFFEFF1F5);
-        textColor = const Color(0xFF6C6F85);
+        bgColor = const Color(0xFF1E2D3D);
+        textColor = const Color(0xFF94A3B8);
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         status.replaceAll('_', ' '),
-        style: TextStyle(
+        style: GoogleFonts.nunito(
           color: textColor,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

@@ -3,6 +3,7 @@ import '../../../../core/network/api_service.dart';
 import '../../../../core/models/result.dart';
 import 'package:taskhub_mobile/core/models/page_response.dart';
 import '../models/task_models.dart';
+import 'package:dio/dio.dart' as dio;
 
 class TaskRepository {
   final ApiService _api;
@@ -25,6 +26,28 @@ class TaskRepository {
     String sortBy = 'id',
     String sortDir = 'desc',
   }) async {
+    if (status == 'APPLIED') {
+      final response = await _api.get<List<TaskResponse>>(
+        ApiConstants.myAppliedTasks,
+        parser: (json) => (json as List).map((e) => TaskResponse.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+      if (response.isSuccess) {
+        final pageResponse = PageResponse<TaskResponse>(
+          content: response.data ?? [],
+          page: 0,
+          size: response.data?.length ?? 20,
+          totalElements: response.data?.length ?? 0,
+          totalPages: 1,
+          first: true,
+          last: true,
+          hasNext: false,
+          hasPrevious: false,
+        );
+        return Result.success(pageResponse);
+      }
+      return Result.failure(response.errorOrNull!);
+    }
+
     final response = await _api.get<PageResponse<TaskResponse>>(
       ApiConstants.myTasks,
       queryParameters: {
@@ -62,6 +85,35 @@ class TaskRepository {
       ),
     );
     return response;
+  }
+
+  Future<Result<PageResponse<PublicTaskResponse>>> searchTasks({
+    String? keyword,
+    String? category,
+    int page = 0,
+    int size = 20,
+  }) async {
+    final response = await _api.get<PageResponse<PublicTaskResponse>>(
+      ApiConstants.searchTasks,
+      queryParameters: {
+        if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+        if (category != null && category.isNotEmpty) 'category': category,
+        'page': page,
+        'size': size,
+      },
+      parser: (json) => PageResponse<PublicTaskResponse>.fromJson(
+        json as Map<String, dynamic>,
+        (e) => PublicTaskResponse.fromJson(e as Map<String, dynamic>),
+      ),
+    );
+    return response;
+  }
+
+  Future<Result<List<String>>> getCategories() async {
+    return _api.get<List<String>>(
+      ApiConstants.categories,
+      parser: (json) => (json as List).map((e) => e as String).toList(),
+    );
   }
 
   Future<Result<TaskResponse>> createTask(CreateTaskRequest request) async {
@@ -223,6 +275,24 @@ class TaskRepository {
       data: {
         'reason': reason,
         if (description != null) 'description': description,
+      },
+    );
+  }
+
+  Future<Result<String>> uploadFile(int taskId, String filePath) async {
+    final formData = dio.FormData.fromMap({
+      'taskId': taskId,
+      'file': await dio.MultipartFile.fromFile(filePath),
+    });
+    return _api.post<String>(
+      '/files/upload', // ApiConstants doesn't have this yet, I'll use raw path
+      data: formData,
+      parser: (json) {
+        // The API returns ApiResponse<FileUploadResponse>
+        // Depending on ApiResponse structure, the data might be mapped here.
+        // Let's assume the ApiClient unwraps ApiResponse.
+        // FileUploadResponse has 'url'.
+        return (json as Map<String, dynamic>)['url'] as String;
       },
     );
   }

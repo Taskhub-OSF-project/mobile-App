@@ -33,6 +33,15 @@ class MessagingRepository {
     return response;
   }
 
+  Future<Result<ConversationResponse>> getOrCreateConversationWithUser(int taskId, int userId) async {
+    final response = await _api.post<ConversationResponse>(
+      ApiConstants.createConversationWithUser(taskId, userId),
+      parser: (json) =>
+          ConversationResponse.fromJson(json as Map<String, dynamic>),
+    );
+    return response;
+  }
+
   Future<Result<MessageResponse>> sendMessage(
       int conversationId, String content) async {
     final response = await _api.post<MessageResponse>(

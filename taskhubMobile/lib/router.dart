@@ -21,6 +21,7 @@ import 'features/notification/presentation/screens/notification_screen.dart';
 import 'features/messaging/presentation/screens/conversation_list_screen.dart';
 import 'features/messaging/presentation/screens/chat_screen.dart';
 import 'features/search/presentation/screens/search_screen.dart';
+import 'features/task/presentation/screens/submissions_screen.dart';
 import 'shared/widgets/main_scaffold.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -101,6 +102,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/home',
             builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/submissions',
+            builder: (context, state) => const SubmissionsScreen(),
           ),
           GoRoute(
             path: '/tasks',

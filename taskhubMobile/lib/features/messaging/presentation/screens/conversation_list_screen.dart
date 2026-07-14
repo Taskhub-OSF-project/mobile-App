@@ -89,7 +89,9 @@ class _ConversationTile extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: AppTheme.primary.withOpacity(0.1),
         child: Text(
-          (conversation.otherUserName ?? 'U')[0].toUpperCase(),
+          (conversation.otherUserName != null && conversation.otherUserName!.isNotEmpty)
+              ? conversation.otherUserName![0].toUpperCase()
+              : 'U',
           style: const TextStyle(
               color: AppTheme.primary, fontWeight: FontWeight.bold),
         ),

@@ -246,6 +246,42 @@ Map<String, dynamic> _$SubmissionAIResultToJson(SubmissionAIResult instance) =>
       'score': instance.score,
     };
 
+PublicTaskResponse _$PublicTaskResponseFromJson(Map<String, dynamic> json) =>
+    PublicTaskResponse(
+      id: (json['id'] as num).toInt(),
+      title: json['title'] as String,
+      description: json['description'] as String,
+      category: json['category'] as String?,
+      budget: json['budget'] as String,
+      deadline: json['deadline'] as String?,
+      status: json['status'] as String?,
+      hirerName: json['hirerName'] as String?,
+      hirerId: (json['hirerId'] as num?)?.toInt(),
+      hirerAvatarUrl: json['hirerAvatarUrl'] as String?,
+      skillsRequired: (json['skillsRequired'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      applicantCount: (json['applicantCount'] as num?)?.toInt(),
+      createdAt: json['createdAt'] as String?,
+    );
+
+Map<String, dynamic> _$PublicTaskResponseToJson(PublicTaskResponse instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'description': instance.description,
+      'category': instance.category,
+      'budget': instance.budget,
+      'deadline': instance.deadline,
+      'status': instance.status,
+      'hirerName': instance.hirerName,
+      'hirerId': instance.hirerId,
+      'hirerAvatarUrl': instance.hirerAvatarUrl,
+      'skillsRequired': instance.skillsRequired,
+      'applicantCount': instance.applicantCount,
+      'createdAt': instance.createdAt,
+    };
+
 RevisionRequestResponse _$RevisionRequestResponseFromJson(
   Map<String, dynamic> json,
 ) => RevisionRequestResponse(

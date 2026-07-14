@@ -283,6 +283,44 @@ class SubmissionAIResult {
 }
 
 @JsonSerializable()
+class PublicTaskResponse {
+  final int id;
+  final String title;
+  final String description;
+  final String? category;
+  final String budget;
+  final String? deadline;
+  final String? status;
+  final String? hirerName;
+  final int? hirerId;
+  final String? hirerAvatarUrl;
+  final List<String>? skillsRequired;
+  final int? applicantCount;
+  final String? createdAt;
+
+  PublicTaskResponse({
+    required this.id,
+    required this.title,
+    required this.description,
+    this.category,
+    required this.budget,
+    this.deadline,
+    this.status,
+    this.hirerName,
+    this.hirerId,
+    this.hirerAvatarUrl,
+    this.skillsRequired,
+    this.applicantCount,
+    this.createdAt,
+  });
+
+  factory PublicTaskResponse.fromJson(Map<String, dynamic> json) =>
+      _$PublicTaskResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PublicTaskResponseToJson(this);
+}
+
+@JsonSerializable()
 class RevisionRequestResponse {
   final int id;
   @JsonKey(name: 'taskId')

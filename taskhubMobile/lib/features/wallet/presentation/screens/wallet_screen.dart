@@ -22,6 +22,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   String? _error;
   int _page = 0;
   bool _hasMore = true;
+  double _escrowBalance = 0;
 
   final _vndFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '');
 
@@ -46,10 +47,27 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     final repo = ref.read(walletRepositoryProvider);
     final balanceResult = await repo.getBalance();
     final txResult = await repo.getTransactionsPaged();
+    
+    double computedEscrow = 0;
+    final user = ref.read(currentUserProvider);
+    if (user != null && user.isHirer) {
+      final taskRepo = ref.read(taskRepositoryProvider);
+      final tasksResult = await taskRepo.getMyTasks(size: 1000);
+      if (tasksResult.isSuccess) {
+        final allTasks = tasksResult.data?.content ?? [];
+        final escrowedStatuses = ["ESCROW_FUNDED", "ACTIVE", "IN_PROGRESS", "SUBMITTED", "DISPUTED"];
+        for (var t in allTasks) {
+          if (escrowedStatuses.contains(t.status)) {
+            computedEscrow += t.budget * 1.05;
+          }
+        }
+      }
+    }
 
     if (mounted) {
       setState(() {
         _wallet = balanceResult.data;
+        _escrowBalance = computedEscrow;
         _transactions = txResult.data?.content ?? [];
         _hasMore = txResult.data?.hasNext ?? false;
         _isLoading = false;
@@ -99,7 +117,11 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [AppTheme.primary, AppTheme.primaryDark],
+                    colors: [
+                      Color(0xFF10B981), // emerald-500
+                      Color(0xFF059669), // emerald-600
+                      Color(0xFF047857), // emerald-700
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -120,6 +142,20 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    if (_escrowBalance > 0) ...[
+                      const SizedBox(height: 12),
+                      const Text('Đang giữ ký quỹ (Escrow)',
+                          style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_vndFormat.format(_escrowBalance)} VND',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     Row(
                       children: [

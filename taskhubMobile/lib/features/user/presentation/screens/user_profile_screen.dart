@@ -88,7 +88,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             child: user.avatarUrl == null
                 ? Text(
                     user.fullName.isNotEmpty
-                        ? user.fullName[0].toUpperCase()
+                        ? (user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?')
                         : '?',
                     style: const TextStyle(
                         fontSize: 32,

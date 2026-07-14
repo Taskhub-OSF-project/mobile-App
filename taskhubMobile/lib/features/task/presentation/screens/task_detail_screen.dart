@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../task/data/repositories/task_repository.dart';
 import '../../../task/data/models/task_models.dart';
 import '../../../../shared/widgets/common_widgets.dart';
+import 'package:file_picker/file_picker.dart';
 
 class TaskDetailScreen extends ConsumerStatefulWidget {
   final int taskId;
@@ -225,27 +226,112 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               const SizedBox(height: 8),
               ...task.applicants!.map((app) => Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text(app.studentName[0].toUpperCase()),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                CircleAvatar(
+                                  child: Text(app.studentName.isNotEmpty ? app.studentName[0].toUpperCase() : '?'),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        app.studentName.isNotEmpty ? app.studentName : 'Ẩn danh',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                      if (app.studentUniversity != null && app.studentUniversity!.isNotEmpty)
+                                        Text(
+                                          app.studentUniversity!,
+                                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                app.status == 'PENDING'
+                                    ? ElevatedButton(
+                                        onPressed: () async {
+                                          final repo = ref.read(taskRepositoryProvider);
+                                          await repo.acceptApplication(app.id);
+                                          _loadTask();
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          minimumSize: Size.zero, // Override global double.infinity
+                                        ),
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 8),
+                                          child: Text('Chấp nhận'),
+                                        ),
+                                      )
+                                    : StatusBadge(status: app.status ?? 'PENDING'),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                OutlinedButton.icon(
+                                  icon: const Icon(Icons.person_outline, size: 16),
+                                  label: const Text('Hồ sơ'),
+                                  style: OutlinedButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                  onPressed: () {
+                                    context.push('/user/${app.studentId}');
+                                  },
+                                ),
+                                if (app.coverLetter != null && app.coverLetter!.isNotEmpty)
+                                  OutlinedButton.icon(
+                                    icon: const Icon(Icons.description_outlined, size: 16),
+                                    label: const Text('CV / Lời ngỏ'),
+                                    style: OutlinedButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('CV / Lời ngỏ'),
+                                          content: SingleChildScrollView(
+                                            child: Text(app.coverLetter!),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => context.pop(),
+                                              child: const Text('Đóng'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                OutlinedButton.icon(
+                                  icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                                  label: const Text('Nhắn tin'),
+                                  style: OutlinedButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                  onPressed: () async {
+                                    final repo = ref.read(messagingRepositoryProvider);
+                                    final result = await repo.getOrCreateConversationWithUser(widget.taskId, app.studentId);
+                                    if (!context.mounted) return;
+                                    if (result.isSuccess) {
+                                      context.push('/messages/${result.data!.id}');
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(result.error?.message ?? 'Lỗi tạo trò chuyện')),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      title: Text(app.studentName),
-                      subtitle: Text(app.studentUniversity ?? ''),
-                      trailing: app.status == 'PENDING'
-                          ? ElevatedButton(
-                              onPressed: () async {
-                                final repo = ref.read(taskRepositoryProvider);
-                                await repo.acceptApplication(app.id);
-                                _loadTask();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
-                              ),
-                              child: const Text('Chấp nhận'),
-                            )
-                          : StatusBadge(status: app.status ?? 'PENDING'),
-                    ),
                   )),
             ],
 
@@ -258,42 +344,144 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   Future<void> _showSubmitDialog() async {
     final notesController = TextEditingController();
-    final linkController = TextEditingController();
-    final confirm = await showDialog<bool>(
+    String? pickedFilePath;
+    String? pickedFileName;
+    bool isUploading = false;
+
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nộp sản phẩm'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: notesController,
-              decoration: const InputDecoration(labelText: 'Ghi chú (Tùy chọn)'),
-              maxLines: 3,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Nộp sản phẩm'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: notesController,
+                    decoration: const InputDecoration(labelText: 'Ghi chú (Tùy chọn)'),
+                    maxLines: 3,
+                    enabled: !isUploading,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          pickedFileName ?? 'Chưa chọn file nào (Tùy chọn)',
+                          style: TextStyle(
+                            color: pickedFileName != null ? AppTheme.textPrimary : AppTheme.textTertiary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        icon: const Icon(Icons.attach_file, size: 16),
+                        label: const Text('Chọn File'),
+                        onPressed: isUploading
+                            ? null
+                            : () async {
+                                final result = await FilePicker.pickFiles();
+                                if (result != null && result.files.single.path != null) {
+                                  setState(() {
+                                    pickedFilePath = result.files.single.path;
+                                    pickedFileName = result.files.single.name;
+                                  });
+                                }
+                              },
+                      ),
+                    ],
+                  ),
+                  if (isUploading) ...[
+                    const SizedBox(height: 16),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: linkController,
-              decoration: const InputDecoration(labelText: 'Đường dẫn File (Tùy chọn)'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Nộp')),
-        ],
-      )
+            actions: [
+              TextButton(
+                onPressed: isUploading ? null : () => Navigator.pop(ctx, null),
+                child: const Text('Hủy')
+              ),
+              ElevatedButton(
+                onPressed: isUploading
+                    ? null
+                    : () async {
+                        setState(() {
+                          isUploading = true;
+                        });
+                        String? fileUrl;
+                        if (pickedFilePath != null) {
+                          try {
+                            final repo = ref.read(taskRepositoryProvider);
+                            final uploadRes = await repo.uploadFile(widget.taskId, pickedFilePath!);
+                            if (uploadRes.isSuccess) {
+                              fileUrl = uploadRes.dataOrNull;
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload thất bại: ${uploadRes.errorOrNull?.message ?? 'Lỗi không xác định'}')));
+                              }
+                              setState(() {
+                                isUploading = false;
+                              });
+                              return;
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi upload: $e')));
+                            }
+                            setState(() {
+                              isUploading = false;
+                            });
+                            return;
+                          }
+                        }
+                        
+                        // Pass data back
+                        Navigator.pop(ctx, {
+                          'notes': notesController.text.trim(),
+                          'fileUrl': fileUrl,
+                        });
+                      },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: const Text('Nộp'),
+              ),
+            ],
+          );
+        },
+      ),
     );
-    if (confirm == true && mounted) {
+
+    if (result != null && mounted) {
       final repo = ref.read(taskRepositoryProvider);
-      final notes = notesController.text.trim();
-      final link = linkController.text.trim();
-      final res = await repo.submitWork(widget.taskId, notes.isNotEmpty ? notes : null, link.isNotEmpty ? [link] : null);
+      final notes = result['notes'] as String;
+      final fileUrl = result['fileUrl'] as String?;
+      
+      final res = await repo.submitWork(
+        widget.taskId, 
+        notes.isNotEmpty ? notes : null, 
+        fileUrl != null ? [fileUrl] : null
+      );
+      
       if (res.isSuccess) {
-         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nộp sản phẩm thành công')));
-         _loadTask();
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nộp sản phẩm thành công')));
+        _loadTask();
       } else {
-         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.error?.message ?? 'Lỗi nộp sản phẩm')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.errorOrNull?.message ?? 'Lỗi không xác định')));
       }
     }
   }
@@ -309,10 +497,10 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surfaceElevated,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -326,6 +514,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               if (status == 'DRAFT') ...[
                 Expanded(
                   child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
                     onPressed: () async {
                       final repo = ref.read(taskRepositoryProvider);
                       await repo.lockTask(task.id);
@@ -337,6 +526,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                     onPressed: () async {
                       final repo = ref.read(taskRepositoryProvider);
                       await repo.fundEscrow(task.id);
@@ -349,6 +539,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               if (status == 'IN_PROGRESS')
                 Expanded(
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                     onPressed: () async {
                       final repo = ref.read(taskRepositoryProvider);
                       await repo.releaseEscrow(task.id);
@@ -360,6 +551,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               if (status == 'SUBMITTED')
                 Expanded(
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                     onPressed: () async {
                       final repo = ref.read(taskRepositoryProvider);
                       await repo.approveSubmission(task.id);
@@ -374,6 +566,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               if (status == 'IN_PROGRESS')
                 Expanded(
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                     onPressed: _showSubmitDialog,
                     child: const Text('Nộp sản phẩm'),
                   ),
@@ -383,6 +576,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             if (isStudent && task.status == 'ACTIVE') ...[
               Expanded(
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                   onPressed: () async {
                     final repo = ref.read(taskRepositoryProvider);
                     final result = await repo.applyToTask(task.id, null);
