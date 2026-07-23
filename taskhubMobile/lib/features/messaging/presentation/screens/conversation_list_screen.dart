@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,25 +21,46 @@ class _ConversationListScreenState
   bool _isLoading = true;
   String? _error;
 
+  String _searchQuery = '';
+  String _filter = 'all'; // all, unread, active
+  Timer? _pollingTimer;
+
   @override
   void initState() {
     super.initState();
     _loadConversations();
+    _startPolling();
   }
 
-  Future<void> _loadConversations() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted) {
+        _loadConversations(silent: true);
+      }
     });
+  }
+
+  Future<void> _loadConversations({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     final result =
         await ref.read(messagingRepositoryProvider).getConversations();
     if (result.isSuccess && mounted) {
       setState(() {
         _conversations = result.data?.content ?? [];
-        _isLoading = false;
+        if (!silent) _isLoading = false;
       });
-    } else if (mounted) {
+    } else if (mounted && !silent) {
       setState(() {
         _error = result.error?.message ?? 'Tải danh sách tin nhắn thất bại';
         _isLoading = false;
@@ -46,33 +68,95 @@ class _ConversationListScreenState
     }
   }
 
+  List<ConversationResponse> get _filteredConversations {
+    return _conversations.where((item) {
+      if (_filter == 'unread' && item.unreadCount == 0) return false;
+      if (_filter == 'active' && item.taskTitle == null) return false;
+      
+      final q = _searchQuery.toLowerCase();
+      if (q.isNotEmpty) {
+        final matchTitle = item.taskTitle?.toLowerCase().contains(q) ?? false;
+        final matchName = item.otherUserName?.toLowerCase().contains(q) ?? false;
+        if (!matchTitle && !matchName) return false;
+      }
+      return true;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayList = _filteredConversations;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tin nhắn'),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? ErrorDisplay(
-                  message: _error!, onRetry: _loadConversations)
-              : _conversations.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.chat_bubble_outline,
-                      title: 'Chưa có tin nhắn',
-                      subtitle: 'Bắt đầu cuộc trò chuyện từ một công việc',
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadConversations,
-                      child: ListView.builder(
-                        itemCount: _conversations.length,
-                        itemBuilder: (context, index) {
-                          final conv = _conversations[index];
-                          return _ConversationTile(conversation: conv);
-                        },
-                      ),
-                    ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Tìm theo tên hoặc tiêu đề...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              ),
+              onChanged: (val) => setState(() => _searchQuery = val),
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                _buildFilterChip('Tất cả', 'all'),
+                const SizedBox(width: 8),
+                _buildFilterChip('Chưa đọc', 'unread'),
+                const SizedBox(width: 8),
+                _buildFilterChip('Đang mở', 'active'),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? ErrorDisplay(
+                        message: _error!, onRetry: _loadConversations)
+                    : displayList.isEmpty
+                        ? const EmptyState(
+                            icon: Icons.chat_bubble_outline,
+                            title: 'Chưa có tin nhắn',
+                            subtitle: 'Không tìm thấy cuộc trò chuyện nào',
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadConversations,
+                            child: ListView.builder(
+                              itemCount: displayList.length,
+                              itemBuilder: (context, index) {
+                                final conv = displayList[index];
+                                return _ConversationTile(conversation: conv);
+                              },
+                            ),
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _filter == value;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => setState(() => _filter = value),
+      selectedColor: AppTheme.primary.withOpacity(0.2),
+      checkmarkColor: AppTheme.primary,
     );
   }
 }

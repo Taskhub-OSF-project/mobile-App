@@ -268,13 +268,44 @@ class SubmissionResponse {
 }
 
 @JsonSerializable()
-class SubmissionAIResult {
-  @JsonKey(name: 'isPassed')
-  final bool isPassed;
-  final String? feedback;
-  final int score;
+class CriteriaAIResult {
+  final int? index;
+  final String? criteria;
+  final String? status;
+  final bool? locked;
+  final String? evidence;
+  final String? suggestion;
 
-  SubmissionAIResult({required this.isPassed, this.feedback, required this.score});
+  CriteriaAIResult({
+    this.index,
+    this.criteria,
+    this.status,
+    this.locked,
+    this.evidence,
+    this.suggestion,
+  });
+
+  factory CriteriaAIResult.fromJson(Map<String, dynamic> json) =>
+      _$CriteriaAIResultFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CriteriaAIResultToJson(this);
+}
+
+@JsonSerializable()
+class SubmissionAIResult {
+  final String? overallStatus;
+  final List<CriteriaAIResult>? criteriaResults;
+  final bool canSubmit;
+  final String? evaluatedAt;
+  final String? summary;
+
+  SubmissionAIResult({
+    this.overallStatus,
+    this.criteriaResults,
+    required this.canSubmit,
+    this.evaluatedAt,
+    this.summary,
+  });
 
   factory SubmissionAIResult.fromJson(Map<String, dynamic> json) =>
       _$SubmissionAIResultFromJson(json);

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'providers.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
+import 'features/auth/presentation/screens/student_profile_setup_screen.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/auth/presentation/screens/forgot_password_screen.dart';
@@ -71,6 +72,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/student-profile-setup',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return StudentProfileSetupScreen(
+            email: extra['email'] as String? ?? '',
+            password: extra['password'] as String? ?? '',
+            fullName: extra['fullName'] as String? ?? '',
+            phoneNumber: extra['phoneNumber'] as String? ?? '',
+            age: extra['age'] as int?,
+          );
+        },
       ),
       GoRoute(
         path: '/forgot-password',

@@ -232,18 +232,44 @@ Map<String, dynamic> _$SubmissionResponseToJson(SubmissionResponse instance) =>
       'status': instance.status,
     };
 
+CriteriaAIResult _$CriteriaAIResultFromJson(Map<String, dynamic> json) =>
+    CriteriaAIResult(
+      index: (json['index'] as num?)?.toInt(),
+      criteria: json['criteria'] as String?,
+      status: json['status'] as String?,
+      locked: json['locked'] as bool?,
+      evidence: json['evidence'] as String?,
+      suggestion: json['suggestion'] as String?,
+    );
+
+Map<String, dynamic> _$CriteriaAIResultToJson(CriteriaAIResult instance) =>
+    <String, dynamic>{
+      'index': instance.index,
+      'criteria': instance.criteria,
+      'status': instance.status,
+      'locked': instance.locked,
+      'evidence': instance.evidence,
+      'suggestion': instance.suggestion,
+    };
+
 SubmissionAIResult _$SubmissionAIResultFromJson(Map<String, dynamic> json) =>
     SubmissionAIResult(
-      isPassed: json['isPassed'] as bool,
-      feedback: json['feedback'] as String?,
-      score: (json['score'] as num).toInt(),
+      overallStatus: json['overallStatus'] as String?,
+      criteriaResults: (json['criteriaResults'] as List<dynamic>?)
+          ?.map((e) => CriteriaAIResult.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      canSubmit: json['canSubmit'] as bool,
+      evaluatedAt: json['evaluatedAt'] as String?,
+      summary: json['summary'] as String?,
     );
 
 Map<String, dynamic> _$SubmissionAIResultToJson(SubmissionAIResult instance) =>
     <String, dynamic>{
-      'isPassed': instance.isPassed,
-      'feedback': instance.feedback,
-      'score': instance.score,
+      'overallStatus': instance.overallStatus,
+      'criteriaResults': instance.criteriaResults,
+      'canSubmit': instance.canSubmit,
+      'evaluatedAt': instance.evaluatedAt,
+      'summary': instance.summary,
     };
 
 PublicTaskResponse _$PublicTaskResponseFromJson(Map<String, dynamic> json) =>

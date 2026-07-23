@@ -8,7 +8,7 @@ part of 'auth_models.dart';
 
 AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) => AuthResponse(
   accessToken: json['token'] as String,
-  refreshToken: json['refreshToken'] as String,
+  refreshToken: json['refreshToken'] as String?,
   userId: (json['userId'] as num).toInt(),
   email: json['email'] as String,
   fullName: json['fullName'] as String,
@@ -51,6 +51,7 @@ RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
       role: json['role'] as String,
       phoneNumber: json['phoneNumber'] as String?,
       dateOfBirth: json['dateOfBirth'] as String?,
+      age: (json['age'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$RegisterRequestToJson(RegisterRequest instance) =>
@@ -63,6 +64,7 @@ Map<String, dynamic> _$RegisterRequestToJson(RegisterRequest instance) =>
       'role': instance.role,
       'phoneNumber': instance.phoneNumber,
       'dateOfBirth': instance.dateOfBirth,
+      'age': instance.age,
     };
 
 RefreshTokenRequest _$RefreshTokenRequestFromJson(Map<String, dynamic> json) =>

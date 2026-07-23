@@ -144,6 +144,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String? major,
     String? phoneNumber,
     String? dateOfBirth,
+    int? age,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
@@ -157,6 +158,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           major: major,
           phoneNumber: phoneNumber,
           dateOfBirth: dateOfBirth,
+          age: age,
         ),
       );
 

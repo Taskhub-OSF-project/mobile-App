@@ -9,7 +9,7 @@ class AuthResponse {
   @JsonKey(name: 'token')
   final String accessToken;
   @JsonKey(name: 'refreshToken')
-  final String refreshToken;
+  final String? refreshToken;
   @JsonKey(name: 'userId')
   final int userId;
   final String email;
@@ -21,7 +21,7 @@ class AuthResponse {
 
   AuthResponse({
     required this.accessToken,
-    required this.refreshToken,
+    this.refreshToken,
     required this.userId,
     required this.email,
     required this.fullName,
@@ -61,6 +61,7 @@ class RegisterRequest {
   final String? phoneNumber;
   @JsonKey(name: 'dateOfBirth')
   final String? dateOfBirth;
+  final int? age;
 
   RegisterRequest({
     required this.email,
@@ -71,6 +72,7 @@ class RegisterRequest {
     required this.role,
     this.phoneNumber,
     this.dateOfBirth,
+    this.age,
   });
 
   factory RegisterRequest.fromJson(Map<String, dynamic> json) =>

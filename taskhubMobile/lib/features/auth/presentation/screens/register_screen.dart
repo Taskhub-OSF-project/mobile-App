@@ -19,12 +19,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _universityController = TextEditingController();
-  final _majorController = TextEditingController();
+  final _ageController = TextEditingController();
+  
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'STUDENT';
-  DateTime? _dateOfBirth;
 
   @override
   void dispose() {
@@ -33,46 +32,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _phoneController.dispose();
-    _universityController.dispose();
-    _majorController.dispose();
+    _ageController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDateOfBirth() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dateOfBirth ?? DateTime(now.year - 20),
-      firstDate: DateTime(1950),
-      lastDate: DateTime(now.year - 10),
-    );
-    if (picked != null) {
-      setState(() => _dateOfBirth = picked);
-    }
-  }
 
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
 
-  Future<void> _register() async {
+  Future<void> _handleNext() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    int? ageValue;
+    if (_ageController.text.trim().isNotEmpty) {
+      ageValue = int.tryParse(_ageController.text.trim());
+    }
+
+    if (_selectedRole == 'STUDENT') {
+      context.push('/student-profile-setup', extra: {
+        'email': _emailController.text.trim(),
+        'password': _passwordController.text,
+        'fullName': _nameController.text.trim(),
+        'phoneNumber': _phoneController.text.trim(),
+        'age': ageValue,
+      });
+      return;
+    }
 
     final success = await ref.read(authNotifierProvider.notifier).register(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           fullName: _nameController.text.trim(),
           role: _selectedRole,
-          university: _universityController.text.trim().isEmpty
-              ? null
-              : _universityController.text.trim(),
-          major: _majorController.text.trim().isEmpty
-              ? null
-              : _majorController.text.trim(),
           phoneNumber: _phoneController.text.trim().isEmpty
               ? null
               : _phoneController.text.trim(),
-          dateOfBirth: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : null,
+          age: ageValue,
         );
 
     if (success && mounted) {
@@ -206,25 +199,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: _selectDateOfBirth,
-                  child: AbsorbPointer(
-                    child: TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Ngày sinh',
-                        prefixIcon: const Icon(Icons.cake_outlined),
-                        suffixIcon: const Icon(Icons.calendar_today_outlined),
-                        hintText: _dateOfBirth == null
-                            ? 'Chọn ngày sinh của bạn'
-                            : null,
-                      ),
-                      controller: TextEditingController(
-                        text: _dateOfBirth != null
-                            ? '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'
-                            : '',
-                      ),
-                    ),
+                TextFormField(
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Tuổi',
+                    prefixIcon: Icon(Icons.cake_outlined),
+                    hintText: 'VD: 20',
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Vui lòng nhập tuổi';
+                    }
+                    final ageNum = int.tryParse(value);
+                    if (ageNum == null || ageNum < 10 || ageNum > 120) {
+                      return 'Tuổi phải là số từ 10 đến 120';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -285,27 +278,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _universityController,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Trường Đại học (tùy chọn)',
-                    prefixIcon: Icon(Icons.account_balance_outlined),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _majorController,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    labelText: 'Chuyên ngành (tùy chọn)',
-                    prefixIcon: Icon(Icons.menu_book_outlined),
-                  ),
-                ),
+
                 const SizedBox(height: 32),
                 ElevatedButton(
-                  onPressed: authState.isLoading ? null : _register,
+                  onPressed: authState.isLoading ? null : _handleNext,
                   child: authState.isLoading
                       ? const SizedBox(
                           height: 20,
@@ -316,7 +292,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Tạo tài khoản'),
+                      : Text(_selectedRole == 'STUDENT' ? 'Tiếp tục tạo hồ sơ' : 'Hoàn tất đăng ký'),
                 ),
                 const SizedBox(height: 16),
                 Row(

@@ -5,6 +5,8 @@ import '../../../../providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../task/data/repositories/task_repository.dart';
 import '../../../task/data/models/task_models.dart';
+import '../../../review/data/repositories/review_repository.dart';
+import '../../../review/data/models/review_models.dart';
 import '../../../../shared/widgets/common_widgets.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -335,6 +337,90 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   )),
             ],
 
+            // Safe Escrow Commitment
+            Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              color: AppTheme.surfaceElevated,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Cam kết an toàn', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.lock_outline, size: 20, color: Colors.green),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text('Tiền được giữ trong quỹ ký quỹ.', style: TextStyle(color: Colors.grey[700], fontSize: 13))),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline, size: 20, color: Colors.green),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text('Tiêu chí được khóa trước khi bắt đầu.', style: TextStyle(color: Colors.grey[700], fontSize: 13))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            if (task.status == 'SUBMITTED')
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle_outline, color: Colors.blue),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Bài đã được gửi', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                          SizedBox(height: 4),
+                          Text('Người thuê đang xem xét kết quả và tiêu chí nghiệm thu.', style: TextStyle(color: Colors.blue, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (task.status == 'DISPUTED')
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.red),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Công việc đang tranh chấp', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                          SizedBox(height: 4),
+                          Text('Hãy tiếp tục trao đổi trong không gian làm việc; quản trị viên sẽ xử lý.', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             const SizedBox(height: 80),
           ],
         ),
@@ -346,7 +432,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     final notesController = TextEditingController();
     String? pickedFilePath;
     String? pickedFileName;
+    String? uploadedFileUrl;
     bool isUploading = false;
+    bool isCheckingAi = false;
+    SubmissionAIResult? aiResult;
+    String? errorText;
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -357,101 +447,199 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             title: const Text('Nộp sản phẩm'),
             content: SizedBox(
               width: MediaQuery.of(context).size.width * 0.9,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: notesController,
-                    decoration: const InputDecoration(labelText: 'Ghi chú (Tùy chọn)'),
-                    maxLines: 3,
-                    enabled: !isUploading,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          pickedFileName ?? 'Chưa chọn file nào (Tùy chọn)',
-                          style: TextStyle(
-                            color: pickedFileName != null ? AppTheme.textPrimary : AppTheme.textTertiary,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: notesController,
+                      decoration: const InputDecoration(labelText: 'Ghi chú (Tùy chọn)'),
+                      maxLines: 3,
+                      enabled: !isUploading && !isCheckingAi,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            pickedFileName ?? 'Chưa chọn file nào (Tùy chọn)',
+                            style: TextStyle(
+                              color: pickedFileName != null ? AppTheme.textPrimary : AppTheme.textTertiary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          icon: const Icon(Icons.attach_file, size: 16),
+                          label: const Text('Chọn File'),
+                          onPressed: (isUploading || isCheckingAi)
+                              ? null
+                              : () async {
+                                  final result = await FilePicker.pickFiles();
+                                  if (result != null && result.files.single.path != null) {
+                                    setState(() {
+                                      pickedFilePath = result.files.single.path;
+                                      pickedFileName = result.files.single.name;
+                                      uploadedFileUrl = null;
+                                      aiResult = null;
+                                    });
+                                  }
+                                },
                         ),
-                        icon: const Icon(Icons.attach_file, size: 16),
-                        label: const Text('Chọn File'),
-                        onPressed: isUploading
-                            ? null
-                            : () async {
-                                final result = await FilePicker.pickFiles();
-                                if (result != null && result.files.single.path != null) {
-                                  setState(() {
-                                    pickedFilePath = result.files.single.path;
-                                    pickedFileName = result.files.single.name;
-                                  });
-                                }
-                              },
+                      ],
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 16),
+                      Text(errorText!, style: const TextStyle(color: Colors.red)),
+                    ],
+                    if (aiResult != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: aiResult!.canSubmit ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                          border: Border.all(color: aiResult!.canSubmit ? Colors.green : Colors.orange),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.auto_awesome, color: aiResult!.canSubmit ? Colors.green : Colors.orange, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    aiResult!.canSubmit ? 'Kết quả AI: Đạt yêu cầu' : 'Kết quả AI: Cần bổ sung',
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: aiResult!.canSubmit ? Colors.green : Colors.orange),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (aiResult!.summary != null && aiResult!.summary!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(aiResult!.summary!, style: const TextStyle(fontSize: 13)),
+                            ],
+                            if (aiResult!.criteriaResults != null && aiResult!.criteriaResults!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              ...aiResult!.criteriaResults!.map((c) => Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      c.status == 'met' ? Icons.check_circle : (c.status == 'partial' ? Icons.info : Icons.cancel),
+                                      size: 16,
+                                      color: c.status == 'met' ? Colors.green : (c.status == 'partial' ? Colors.orange : Colors.red),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        c.evidence ?? c.criteria ?? '',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
-                  ),
-                  if (isUploading) ...[
-                    const SizedBox(height: 16),
-                    const Center(child: CircularProgressIndicator()),
+                    if (isUploading || isCheckingAi) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                          const SizedBox(width: 12),
+                          Text(isUploading ? 'Đang tải file lên...' : 'AI đang kiểm tra...'),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             actions: [
               TextButton(
-                onPressed: isUploading ? null : () => Navigator.pop(ctx, null),
+                onPressed: (isUploading || isCheckingAi) ? null : () => Navigator.pop(ctx, null),
                 child: const Text('Hủy')
               ),
-              ElevatedButton(
-                onPressed: isUploading
+              OutlinedButton(
+                onPressed: (isUploading || isCheckingAi)
                     ? null
                     : () async {
                         setState(() {
-                          isUploading = true;
+                          isCheckingAi = true;
+                          errorText = null;
                         });
-                        String? fileUrl;
-                        if (pickedFilePath != null) {
-                          try {
-                            final repo = ref.read(taskRepositoryProvider);
+                        
+                        try {
+                          final repo = ref.read(taskRepositoryProvider);
+                          String? fileUrlToUse = uploadedFileUrl;
+                          
+                          if (pickedFilePath != null && uploadedFileUrl == null) {
+                            setState(() { isUploading = true; isCheckingAi = false; });
                             final uploadRes = await repo.uploadFile(widget.taskId, pickedFilePath!);
                             if (uploadRes.isSuccess) {
-                              fileUrl = uploadRes.dataOrNull;
+                              fileUrlToUse = uploadRes.dataOrNull;
+                              uploadedFileUrl = fileUrlToUse;
                             } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload thất bại: ${uploadRes.errorOrNull?.message ?? 'Lỗi không xác định'}')));
-                              }
                               setState(() {
                                 isUploading = false;
+                                errorText = 'Upload thất bại: ${uploadRes.errorOrNull?.message ?? 'Lỗi không xác định'}';
                               });
                               return;
                             }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi upload: $e')));
-                            }
-                            setState(() {
-                              isUploading = false;
-                            });
-                            return;
+                            setState(() { isUploading = false; isCheckingAi = true; });
                           }
+                          
+                          final precheckRes = await repo.precheckSubmission(
+                            widget.taskId, 
+                            SubmissionRequest(
+                              fileUrl: fileUrlToUse,
+                              notes: notesController.text.trim(),
+                            )
+                          );
+                          
+                          if (precheckRes.isSuccess) {
+                            setState(() {
+                              aiResult = precheckRes.data;
+                            });
+                          } else {
+                            setState(() {
+                              errorText = 'Kiểm tra AI thất bại: ${precheckRes.errorOrNull?.message ?? 'Lỗi không xác định'}';
+                            });
+                          }
+                        } catch (e) {
+                          setState(() {
+                            errorText = 'Lỗi kiểm tra AI: $e';
+                          });
+                        } finally {
+                          setState(() {
+                            isCheckingAi = false;
+                            isUploading = false;
+                          });
                         }
-                        
-                        // Pass data back
+                      },
+                child: const Text('Kiểm tra AI'),
+              ),
+              ElevatedButton(
+                onPressed: (isUploading || isCheckingAi || aiResult == null || !aiResult!.canSubmit)
+                    ? null
+                    : () {
                         Navigator.pop(ctx, {
                           'notes': notesController.text.trim(),
-                          'fileUrl': fileUrl,
+                          'fileUrl': uploadedFileUrl,
                         });
                       },
                 style: ElevatedButton.styleFrom(
@@ -482,6 +670,220 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         _loadTask();
       } else {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.errorOrNull?.message ?? 'Lỗi không xác định')));
+      }
+    }
+  }
+
+  Future<void> _showRevisionDialog() async {
+    final reasonController = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Yêu cầu chỉnh sửa'),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(labelText: 'Nêu rõ phần cần chỉnh sửa...'),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Hủy')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, reasonController.text.trim()),
+            child: const Text('Gửi'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && mounted) {
+      final repo = ref.read(taskRepositoryProvider);
+      final res = await repo.requestRevision(widget.taskId, result);
+      if (res.isSuccess) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gửi yêu cầu chỉnh sửa')));
+        _loadTask();
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.errorOrNull?.message ?? 'Lỗi không xác định')));
+      }
+    }
+  }
+
+  Future<void> _showDisputeDialog() async {
+    final reasonController = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mở khiếu nại'),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(labelText: 'Lý do khiếu nại...'),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Hủy')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, reasonController.text.trim()),
+            child: const Text('Khiếu nại'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && mounted) {
+      final repo = ref.read(taskRepositoryProvider);
+      final res = await repo.disputeTask(widget.taskId, result);
+      if (res.isSuccess) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gửi khiếu nại')));
+        _loadTask();
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.errorOrNull?.message ?? 'Lỗi không xác định')));
+      }
+    }
+  }
+
+  Future<void> _showApplyDialog() async {
+    final coverLetterController = TextEditingController();
+    bool isSubmitting = false;
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Ứng tuyển công việc'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Giới thiệu kinh nghiệm liên quan và cách bạn sẽ hoàn thành yêu cầu.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: coverLetterController,
+                    decoration: const InputDecoration(labelText: 'Lời ngỏ (CV/Kinh nghiệm)...'),
+                    maxLines: 4,
+                    enabled: !isSubmitting,
+                  ),
+                  if (isSubmitting) ...[
+                    const SizedBox(height: 16),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(ctx, null),
+                child: const Text('Hủy'),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () {
+                        if (coverLetterController.text.trim().length < 20) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập ít nhất 20 ký tự')));
+                          return;
+                        }
+                        Navigator.pop(ctx, coverLetterController.text.trim());
+                      },
+                child: const Text('Gửi hồ sơ'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && mounted) {
+      final repo = ref.read(taskRepositoryProvider);
+      final res = await repo.applyToTask(widget.taskId, result);
+      if (res.isSuccess) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ứng tuyển thành công!')));
+        _loadTask();
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.errorOrNull?.message ?? 'Lỗi ứng tuyển')));
+      }
+    }
+  }
+
+  Future<void> _showReviewDialog() async {
+    final commentController = TextEditingController();
+    int rating = 5;
+    bool isSubmitting = false;
+
+    final result = await showDialog<CreateReviewRequest>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Đánh giá người thuê'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                        onPressed: isSubmitting ? null : () => setState(() => rating = index + 1),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: commentController,
+                    decoration: const InputDecoration(labelText: 'Chia sẻ trải nghiệm hợp tác...'),
+                    maxLines: 3,
+                    enabled: !isSubmitting,
+                  ),
+                  if (isSubmitting) ...[
+                    const SizedBox(height: 16),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(ctx, null),
+                child: const Text('Hủy'),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () {
+                        Navigator.pop(ctx, CreateReviewRequest(
+                          taskId: widget.taskId,
+                          targetUserId: _task!.hirerId,
+                          reviewType: 'HIRER',
+                          rating: rating.toDouble(),
+                          comment: commentController.text.trim(),
+                        ));
+                      },
+                child: const Text('Gửi đánh giá'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result != null && mounted) {
+      final repo = ref.read(reviewRepositoryProvider);
+      final res = await repo.createReview(result);
+      if (res.isSuccess) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gửi đánh giá')));
+        _loadTask();
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.errorOrNull?.message ?? 'Lỗi gửi đánh giá')));
       }
     }
   }
@@ -523,7 +925,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                     child: const Text('Khóa & Tự động duyệt'),
                   ),
                 ),
-                const SizedBox(width: 12),
+              ],
+              if (status == 'LOCKED') ...[
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
@@ -536,65 +939,122 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   ),
                 ),
               ],
-              if (status == 'IN_PROGRESS')
+              if (status == 'ESCROW_FUNDED')
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                     onPressed: () async {
                       final repo = ref.read(taskRepositoryProvider);
-                      await repo.releaseEscrow(task.id);
+                      await repo.publishTask(task.id);
                       _loadTask();
                     },
-                    child: const Text('Duyệt & Thanh toán'),
+                    child: const Text('Đăng cho SV ứng tuyển'),
                   ),
                 ),
-              if (status == 'SUBMITTED')
+              if (status == 'SUBMITTED') ...[
                 Expanded(
+                  flex: 2,
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52), backgroundColor: Colors.green),
                     onPressed: () async {
                       final repo = ref.read(taskRepositoryProvider);
                       await repo.approveSubmission(task.id);
                       _loadTask();
                     },
-                    child: const Text('Duyệt bài nộp'),
+                    child: const Text('Chấp nhận & Giải ngân'),
                   ),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52), padding: EdgeInsets.zero),
+                    onPressed: _showRevisionDialog,
+                    child: const Text('Sửa'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 52),
+                      padding: EdgeInsets.zero,
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                    onPressed: _showDisputeDialog,
+                    child: const Text('Khiếu nại'),
+                  ),
+                ),
+              ],
+              if (status == 'DISPUTED') ...[
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52), backgroundColor: Colors.green),
+                    onPressed: () async {
+                      final repo = ref.read(taskRepositoryProvider);
+                      await repo.releaseEscrow(task.id);
+                      _loadTask();
+                    },
+                    child: const Text('Giải ngân'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
+                    onPressed: () async {
+                      final repo = ref.read(taskRepositoryProvider);
+                      await repo.refundEscrow(task.id);
+                      _loadTask();
+                    },
+                    child: const Text('Hoàn tiền Escrow'),
+                  ),
+                ),
+              ],
             ],
             // Student actions
             if (isAssignee) ...[
-              if (status == 'IN_PROGRESS')
+              if (status == 'IN_PROGRESS' || status == 'SUBMITTED' || status == 'DISPUTED')
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                     onPressed: _showSubmitDialog,
-                    child: const Text('Nộp sản phẩm'),
+                    child: const Text('Nộp / Sửa sản phẩm'),
+                  ),
+                ),
+              if (status == 'COMPLETED')
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
+                    onPressed: _showReviewDialog,
+                    child: const Text('Gửi đánh giá'),
                   ),
                 ),
             ],
             // Student can apply
-            if (isStudent && task.status == 'ACTIVE') ...[
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
-                  onPressed: () async {
-                    final repo = ref.read(taskRepositoryProvider);
-                    final result = await repo.applyToTask(task.id, null);
-                    if (result.isSuccess && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Ứng tuyển thành công!')),
-                      );
-                    } else if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(result.error?.message ??
-                                'Ứng tuyển thất bại')),
-                      );
-                    }
-                  },
-                  child: const Text('Ứng tuyển'),
+            if (isStudent && !isAssignee && !isHirer) ...[
+              if (status == 'ACTIVE' && !(task.applicants?.any((app) => app.studentId == currentUser?.id) ?? false))
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
+                    onPressed: _showApplyDialog,
+                    child: const Text('Ứng tuyển'),
+                  ),
                 ),
-              ),
+              if (task.applicants?.any((app) => app.studentId == currentUser?.id) ?? false)
+                Expanded(
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('Hồ sơ đã gửi và đang chờ phản hồi', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                ),
             ],
           ],
         ),

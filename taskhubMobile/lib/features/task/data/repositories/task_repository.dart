@@ -285,7 +285,7 @@ class TaskRepository {
       'file': await dio.MultipartFile.fromFile(filePath),
     });
     return _api.post<String>(
-      '/files/upload', // ApiConstants doesn't have this yet, I'll use raw path
+      ApiConstants.fileUpload,
       data: formData,
       parser: (json) {
         // The API returns ApiResponse<FileUploadResponse>
