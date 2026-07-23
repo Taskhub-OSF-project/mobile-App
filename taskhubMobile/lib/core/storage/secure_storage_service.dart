@@ -38,13 +38,16 @@ class SecureStorageService {
   // Convenience helpers for auth tokens
   Future<void> saveTokens({
     required String accessToken,
-    required String refreshToken,
+    String? refreshToken,
   }) async {
-    await Future.wait([
+    final futures = <Future<void>>[
       write(StorageKeys.accessToken, accessToken),
-      write(StorageKeys.refreshToken, refreshToken),
       write(StorageKeys.isLoggedIn, 'true'),
-    ]);
+    ];
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      futures.add(write(StorageKeys.refreshToken, refreshToken));
+    }
+    await Future.wait(futures);
   }
 
   Future<void> saveUserSession({

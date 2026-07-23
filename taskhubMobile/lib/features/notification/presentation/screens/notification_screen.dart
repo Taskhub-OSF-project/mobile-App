@@ -30,7 +30,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     if (result.isSuccess && mounted) {
       setState(() { _notifications = result.data?.content ?? []; _isLoading = false; });
     } else if (mounted) {
-      setState(() { _error = result.error?.message ?? 'Failed to load notifications'; _isLoading = false; });
+      setState(() { _error = result.error?.message ?? 'Tải thông báo thất bại'; _isLoading = false; });
     }
   }
 
@@ -67,14 +67,14 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: const Text('Thông báo'),
         actions: [
           TextButton(
             onPressed: () async {
               await ref.read(notificationRepositoryProvider).markAllAsRead();
               _loadNotifications();
             },
-            child: const Text('Mark all read'),
+            child: const Text('Đánh dấu đã đọc tất cả'),
           ),
         ],
       ),
@@ -85,8 +85,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
               : _notifications.isEmpty
                   ? const EmptyState(
                       icon: Icons.notifications_off_outlined,
-                      title: 'No notifications',
-                      subtitle: "You're all caught up!",
+                      title: 'Chưa có thông báo',
+                      subtitle: "Bạn đã xem hết tất cả thông báo!",
                     )
                   : RefreshIndicator(
                       onRefresh: _loadNotifications,
@@ -96,10 +96,10 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                           final notif = _notifications[index];
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            color: notif.isRead == true ? null : AppTheme.primary.withValues(alpha: 0.03),
+                            color: notif.isRead == true ? null : AppTheme.primary.withOpacity(0.03),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: _getColorForType(notif.type).withValues(alpha: 0.1),
+                                backgroundColor: _getColorForType(notif.type).withOpacity(0.1),
                                 child: Icon(_getIconForType(notif.type), color: _getColorForType(notif.type), size: 20),
                               ),
                               title: Text(notif.title, style: TextStyle(fontWeight: notif.isRead == true ? FontWeight.normal : FontWeight.bold)),
@@ -125,9 +125,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
       final dt = DateTime.parse(iso);
       final now = DateTime.now();
       final diff = now.difference(dt);
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
+      if (diff.inHours < 24) return '${diff.inHours} giờ trước';
+      if (diff.inDays < 7) return '${diff.inDays} ngày trước';
       return '${dt.day}/${dt.month}/${dt.year}';
     } catch (e) { return ''; }
   }

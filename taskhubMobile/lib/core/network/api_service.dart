@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
-import 'api_exception.dart';
+import '../models/api_response.dart';
+import '../models/api_error.dart';
+import '../models/result.dart';
 
 class ApiService {
   final Dio _dio;
@@ -13,10 +15,9 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
-      final data = _unwrapResponse<T>(response, parser);
-      return Result.success(data);
+      return _processResponse<T>(response, parser);
     } on DioException catch (e) {
-      return Result.failure(ApiException.fromDioError(e));
+      return Result.failure(_extractApiError(e));
     }
   }
 
@@ -32,10 +33,9 @@ class ApiService {
         data: data,
         queryParameters: queryParameters,
       );
-      final parsed = _unwrapResponse<T>(response, parser);
-      return Result.success(parsed);
+      return _processResponse<T>(response, parser);
     } on DioException catch (e) {
-      return Result.failure(ApiException.fromDioError(e));
+      return Result.failure(_extractApiError(e));
     }
   }
 
@@ -46,10 +46,9 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.put(path, data: data);
-      final parsed = _unwrapResponse<T>(response, parser);
-      return Result.success(parsed);
+      return _processResponse<T>(response, parser);
     } on DioException catch (e) {
-      return Result.failure(ApiException.fromDioError(e));
+      return Result.failure(_extractApiError(e));
     }
   }
 
@@ -60,10 +59,9 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.patch(path, data: data);
-      final parsed = _unwrapResponse<T>(response, parser);
-      return Result.success(parsed);
+      return _processResponse<T>(response, parser);
     } on DioException catch (e) {
-      return Result.failure(ApiException.fromDioError(e));
+      return Result.failure(_extractApiError(e));
     }
   }
 
@@ -73,21 +71,10 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.delete(path);
-      final parsed = _unwrapResponse<T>(response, parser);
-      return Result.success(parsed);
+      return _processResponse<T>(response, parser);
     } on DioException catch (e) {
-      return Result.failure(ApiException.fromDioError(e));
+      return Result.failure(_extractApiError(e));
     }
-  }
-
-  T _unwrapResponse<T>(
-    Response<dynamic> response,
-    T Function(dynamic json)? parser,
-  ) {
-    if (parser != null) {
-      return parser(response.data);
-    }
-    return response.data as T;
   }
 
   Future<Result<T>> uploadFile<T>(
@@ -109,10 +96,46 @@ class ApiService {
           contentType: 'multipart/form-data',
         ),
       );
-      final parsed = _unwrapResponse<T>(response, parser);
-      return Result.success(parsed);
+      return _processResponse<T>(response, parser);
     } on DioException catch (e) {
-      return Result.failure(ApiException.fromDioError(e));
+      return Result.failure(_extractApiError(e));
     }
+  }
+
+  Result<T> _processResponse<T>(
+    Response<dynamic> response,
+    T Function(dynamic json)? parser,
+  ) {
+    if (response.data != null && response.data is Map<String, dynamic>) {
+      final apiResponse = ApiResponse<T>.fromJson(
+        response.data as Map<String, dynamic>,
+        parser ?? (json) => json as T,
+      );
+      
+      if (!apiResponse.success) {
+        return Result.failure(ApiError(
+          message: apiResponse.message ?? 'Operation failed',
+          statusCode: response.statusCode,
+          payload: response.data,
+        ));
+      }
+      
+      if (apiResponse.data == null && null is! T) {
+         return Result.failure(ApiError(message: 'Null data returned but expected a value'));
+      }
+      return Result.success(apiResponse.data as T);
+    }
+    
+    return Result.failure(ApiError(message: 'Invalid response format'));
+  }
+  
+  ApiError _extractApiError(DioException e) {
+    if (e.error is ApiError) {
+      return e.error as ApiError;
+    }
+    return ApiError(
+      statusCode: e.response?.statusCode,
+      message: e.message ?? 'Unknown network error',
+    );
   }
 }

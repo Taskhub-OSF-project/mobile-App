@@ -233,3 +233,154 @@ class RevisionRequestDto {
 
   Map<String, dynamic> toJson() => _$RevisionRequestDtoToJson(this);
 }
+
+@JsonSerializable()
+class SubmissionResponse {
+  final int id;
+  @JsonKey(name: 'taskId')
+  final int taskId;
+  @JsonKey(name: 'studentId')
+  final int studentId;
+  @JsonKey(name: 'fileUrl')
+  final String? fileUrl;
+  final String? notes;
+  @JsonKey(name: 'submittedFiles')
+  final List<SubmittedFileDto>? submittedFiles;
+  @JsonKey(name: 'submittedAt')
+  final String submittedAt;
+  final String status;
+
+  SubmissionResponse({
+    required this.id,
+    required this.taskId,
+    required this.studentId,
+    this.fileUrl,
+    this.notes,
+    this.submittedFiles,
+    required this.submittedAt,
+    required this.status,
+  });
+
+  factory SubmissionResponse.fromJson(Map<String, dynamic> json) =>
+      _$SubmissionResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SubmissionResponseToJson(this);
+}
+
+@JsonSerializable()
+class CriteriaAIResult {
+  final int? index;
+  final String? criteria;
+  final String? status;
+  final bool? locked;
+  final String? evidence;
+  final String? suggestion;
+
+  CriteriaAIResult({
+    this.index,
+    this.criteria,
+    this.status,
+    this.locked,
+    this.evidence,
+    this.suggestion,
+  });
+
+  factory CriteriaAIResult.fromJson(Map<String, dynamic> json) =>
+      _$CriteriaAIResultFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CriteriaAIResultToJson(this);
+}
+
+@JsonSerializable()
+class SubmissionAIResult {
+  final String? overallStatus;
+  final List<CriteriaAIResult>? criteriaResults;
+  final bool canSubmit;
+  final String? evaluatedAt;
+  final String? summary;
+
+  SubmissionAIResult({
+    this.overallStatus,
+    this.criteriaResults,
+    this.canSubmit = false,
+    this.evaluatedAt,
+    this.summary,
+  });
+
+  factory SubmissionAIResult.fromJson(Map<String, dynamic> json) =>
+      _$SubmissionAIResultFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SubmissionAIResultToJson(this);
+}
+
+@JsonSerializable()
+class PublicTaskResponse {
+  final int id;
+  final String title;
+  final String description;
+  final String? category;
+  final String budget;
+  final String? deadline;
+  final String? status;
+  final String? hirerName;
+  final int? hirerId;
+  final String? hirerAvatarUrl;
+  final List<String>? skillsRequired;
+  final int? applicantCount;
+  final String? createdAt;
+
+  PublicTaskResponse({
+    required this.id,
+    required this.title,
+    required this.description,
+    this.category,
+    required this.budget,
+    this.deadline,
+    this.status,
+    this.hirerName,
+    this.hirerId,
+    this.hirerAvatarUrl,
+    this.skillsRequired,
+    this.applicantCount,
+    this.createdAt,
+  });
+
+  factory PublicTaskResponse.fromJson(Map<String, dynamic> json) =>
+      _$PublicTaskResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PublicTaskResponseToJson(this);
+}
+
+@JsonSerializable()
+class RevisionRequestResponse {
+  final int id;
+  @JsonKey(name: 'taskId')
+  final int taskId;
+  final String reason;
+  final String? description;
+  @JsonKey(name: 'requestedAt')
+  final String requestedAt;
+
+  RevisionRequestResponse({
+    required this.id, required this.taskId, required this.reason, this.description, required this.requestedAt
+  });
+
+  factory RevisionRequestResponse.fromJson(Map<String, dynamic> json) =>
+      _$RevisionRequestResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RevisionRequestResponseToJson(this);
+}
+
+@JsonSerializable()
+class LatestSubmissionResultResponse {
+  final SubmissionResponse? submission;
+  final SubmissionAIResult? aiResult;
+  final List<RevisionRequestResponse>? revisions;
+
+  LatestSubmissionResultResponse({this.submission, this.aiResult, this.revisions});
+
+  factory LatestSubmissionResultResponse.fromJson(Map<String, dynamic> json) =>
+      _$LatestSubmissionResultResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$LatestSubmissionResultResponseToJson(this);
+}

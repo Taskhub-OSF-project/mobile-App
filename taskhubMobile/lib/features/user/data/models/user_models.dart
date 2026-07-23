@@ -26,7 +26,7 @@ class UserProfileResponse {
   final String? avatarUrl;
   final String? role;
   @JsonKey(name: 'walletBalance')
-  final double? walletBalance;
+  final num? walletBalance;
   @JsonKey(name: 'isVerified')
   final bool? isVerified;
   @JsonKey(name: 'isAvailable')
@@ -37,15 +37,15 @@ class UserProfileResponse {
   final String? dateOfBirth;
   final int? age;
   @JsonKey(name: 'averageRatingAsFreelancer')
-  final double? averageRatingAsFreelancer;
+  final num? averageRatingAsFreelancer;
   @JsonKey(name: 'averageRatingAsHirer')
-  final double? averageRatingAsHirer;
+  final num? averageRatingAsHirer;
   @JsonKey(name: 'totalReviewsAsFreelancer')
   final int? totalReviewsAsFreelancer;
   @JsonKey(name: 'totalReviewsAsHirer')
   final int? totalReviewsAsHirer;
   @JsonKey(name: 'totalEarnings')
-  final double? totalEarnings;
+  final num? totalEarnings;
   @JsonKey(name: 'completedTasksAsFreelancer')
   final int? completedTasksAsFreelancer;
   @JsonKey(name: 'completedTasksAsHirer')

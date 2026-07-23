@@ -19,12 +19,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _universityController = TextEditingController();
-  final _majorController = TextEditingController();
+  final _ageController = TextEditingController();
+  
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'STUDENT';
-  DateTime? _dateOfBirth;
 
   @override
   void dispose() {
@@ -33,46 +32,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _phoneController.dispose();
-    _universityController.dispose();
-    _majorController.dispose();
+    _ageController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDateOfBirth() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dateOfBirth ?? DateTime(now.year - 20),
-      firstDate: DateTime(1950),
-      lastDate: DateTime(now.year - 10),
-    );
-    if (picked != null) {
-      setState(() => _dateOfBirth = picked);
-    }
-  }
 
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
 
-  Future<void> _register() async {
+  Future<void> _handleNext() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    int? ageValue;
+    if (_ageController.text.trim().isNotEmpty) {
+      ageValue = int.tryParse(_ageController.text.trim());
+    }
+
+    if (_selectedRole == 'STUDENT') {
+      context.push('/student-profile-setup', extra: {
+        'email': _emailController.text.trim(),
+        'password': _passwordController.text,
+        'fullName': _nameController.text.trim(),
+        'phoneNumber': _phoneController.text.trim(),
+        'age': ageValue,
+      });
+      return;
+    }
 
     final success = await ref.read(authNotifierProvider.notifier).register(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           fullName: _nameController.text.trim(),
           role: _selectedRole,
-          university: _universityController.text.trim().isEmpty
-              ? null
-              : _universityController.text.trim(),
-          major: _majorController.text.trim().isEmpty
-              ? null
-              : _majorController.text.trim(),
           phoneNumber: _phoneController.text.trim().isEmpty
               ? null
               : _phoneController.text.trim(),
-          dateOfBirth: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : null,
+          age: ageValue,
         );
 
     if (success && mounted) {
@@ -101,14 +94,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Create Account',
+                  'Tạo tài khoản',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Join TaskHub as a student or hirer',
+                  'Tham gia TaskHub với vai trò sinh viên hoặc người thuê',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -119,7 +112,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: AppTheme.error.withValues(alpha: 0.1),
+                      color: AppTheme.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -134,15 +127,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ],
                     ),
                   ),
-                const Text('I want to:',
+                const Text('Tôi muốn:',
                     style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
                       child: _RoleCard(
-                        title: 'Find Work',
-                        subtitle: 'As a Student',
+                        title: 'Tìm việc',
+                        subtitle: 'Là Sinh viên',
                         icon: Icons.school_outlined,
                         isSelected: _selectedRole == 'STUDENT',
                         onTap: () => setState(() => _selectedRole = 'STUDENT'),
@@ -151,8 +144,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _RoleCard(
-                        title: 'Post Tasks',
-                        subtitle: 'As a Hirer',
+                        title: 'Đăng việc',
+                        subtitle: 'Là Người thuê',
                         icon: Icons.work_outline,
                         isSelected: _selectedRole == 'HIRER',
                         onTap: () => setState(() => _selectedRole = 'HIRER'),
@@ -166,12 +159,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Full Name',
+                    labelText: 'Họ và tên',
                     prefixIcon: Icon(Icons.person_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your full name';
+                      return 'Vui lòng nhập họ và tên của bạn';
                     }
                     return null;
                   },
@@ -187,10 +180,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Vui lòng nhập email của bạn';
                     }
                     if (!value.contains('@')) {
-                      return 'Please enter a valid email';
+                      return 'Vui lòng nhập email hợp lệ';
                     }
                     return null;
                   },
@@ -201,30 +194,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Phone Number',
+                    labelText: 'Số điện thoại',
                     prefixIcon: Icon(Icons.phone_outlined),
                   ),
                 ),
                 const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: _selectDateOfBirth,
-                  child: AbsorbPointer(
-                    child: TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Date of Birth',
-                        prefixIcon: const Icon(Icons.cake_outlined),
-                        suffixIcon: const Icon(Icons.calendar_today_outlined),
-                        hintText: _dateOfBirth == null
-                            ? 'Select your date of birth'
-                            : null,
-                      ),
-                      controller: TextEditingController(
-                        text: _dateOfBirth != null
-                            ? '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'
-                            : '',
-                      ),
-                    ),
+                TextFormField(
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Tuổi',
+                    prefixIcon: Icon(Icons.cake_outlined),
+                    hintText: 'VD: 20',
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Vui lòng nhập tuổi';
+                    }
+                    final ageNum = int.tryParse(value);
+                    if (ageNum == null || ageNum < 10 || ageNum > 120) {
+                      return 'Tuổi phải là số từ 10 đến 120';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -232,7 +225,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: 'Mật khẩu',
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -247,10 +240,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
+                      return 'Vui lòng nhập mật khẩu';
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return 'Mật khẩu phải có ít nhất 6 ký tự';
                     }
                     return null;
                   },
@@ -261,7 +254,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText: _obscureConfirmPassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: 'Confirm Password',
+                    labelText: 'Xác nhận mật khẩu',
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -277,35 +270,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
+                      return 'Vui lòng xác nhận mật khẩu';
                     }
                     if (value != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return 'Mật khẩu không khớp';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _universityController,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'University (optional)',
-                    prefixIcon: Icon(Icons.account_balance_outlined),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _majorController,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    labelText: 'Major (optional)',
-                    prefixIcon: Icon(Icons.menu_book_outlined),
-                  ),
-                ),
+
                 const SizedBox(height: 32),
                 ElevatedButton(
-                  onPressed: authState.isLoading ? null : _register,
+                  onPressed: authState.isLoading ? null : _handleNext,
                   child: authState.isLoading
                       ? const SizedBox(
                           height: 20,
@@ -316,19 +292,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Create Account'),
+                      : Text(_selectedRole == 'STUDENT' ? 'Tiếp tục tạo hồ sơ' : 'Hoàn tất đăng ký'),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Already have an account? ',
+                      'Đã có tài khoản? ',
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                     TextButton(
                       onPressed: () => context.go('/login'),
-                      child: const Text('Sign In'),
+                      child: const Text('Đăng nhập'),
                     ),
                   ],
                 ),
@@ -364,7 +340,7 @@ class _RoleCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : Colors.white,
+          color: isSelected ? AppTheme.primary.withOpacity(0.05) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppTheme.primary : AppTheme.border,

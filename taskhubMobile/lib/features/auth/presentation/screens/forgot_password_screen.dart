@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/common_widgets.dart';
+import '../../../../core/models/api_error.dart';
+import '../../data/models/auth_models.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -36,7 +38,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             .requestPhoneOtp(_phoneController.text.trim(), 'RECOVERY');
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('OTP da duoc gui den so dien thoai cua ban.')),
+            const SnackBar(content: Text('OTP đã được gửi đến số điện thoại của bạn.')),
           );
           context.go('/otp-verify', extra: {
             'phone': _phoneController.text.trim(),
@@ -45,17 +47,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         }
       } else {
         final repo = ref.read(authRepositoryProvider);
-        final res = await repo.forgotPassword(_emailController.text.trim());
+        final res = await repo.forgotPassword(ForgotPasswordRequest(email: _emailController.text.trim()));
         res.when(
           success: (_) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Email khoi phuc da duoc gui. Kiem tra hop thu.')),
+              const SnackBar(content: Text('Email khôi phục đã được gửi. Kiểm tra hộp thư.')),
             );
             context.go('/login');
           },
           failure: (err) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(err.message), backgroundColor: AppTheme.error),
+              SnackBar(content: Text((err as ApiError).message), backgroundColor: AppTheme.error),
             );
           },
         );
@@ -69,7 +71,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quen mat khau'),
+        title: const Text('Quên mật khẩu'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/login'),
@@ -86,14 +88,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               children: [
                 const SizedBox(height: 16),
                 Text(
-                  'Khoi phuc tai khoan',
+                  'Khôi phục tài khoản',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Chon kenh de nhan ma khoi phuc mat khau.',
+                  'Chọn kênh để nhận mã khôi phục mật khẩu.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -161,8 +163,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Nhap email';
-                      if (!value.contains('@')) return 'Email khong hop le';
+                      if (value == null || value.isEmpty) return 'Nhập email';
+                      if (!value.contains('@')) return 'Email không hợp lệ';
                       return null;
                     },
                   )
@@ -171,18 +173,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     decoration: const InputDecoration(
-                      labelText: 'So dien thoai',
+                      labelText: 'Số điện thoại',
                       prefixIcon: Icon(Icons.phone_outlined),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Nhap so dien thoai';
+                      if (value == null || value.isEmpty) return 'Nhập số điện thoại';
                       return null;
                     },
                   ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _loading ? null : _submit,
-                  child: Text(_loading ? 'Dang gui...' : 'Gui ma khoi phuc'),
+                  child: Text(_loading ? 'Đang gửi...' : 'Gửi mã khôi phục'),
                 ),
               ],
             ),

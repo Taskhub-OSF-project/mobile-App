@@ -40,7 +40,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       });
     } else if (mounted) {
       setState(() {
-        _error = result.error?.message ?? 'Failed to load profile';
+        _error = result.error?.message ?? 'Tải hồ sơ thất bại';
         _isLoading = false;
       });
     }
@@ -49,7 +49,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: const Text('Hồ sơ người dùng')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -57,27 +57,38 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               : _user == null
                   ? const EmptyState(
                       icon: Icons.person_off_outlined,
-                      title: 'User not found',
+                      title: 'Không tìm thấy người dùng',
                     )
                   : _buildContent(),
+      floatingActionButton: _user != null ? FloatingActionButton.extended(
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Vui lòng vào chi tiết công việc để nhắn tin.')),
+          );
+        },
+        icon: const Icon(Icons.chat_outlined),
+        label: const Text('Nhắn tin'),
+      ) : null,
     );
   }
 
   Widget _buildContent() {
     final user = _user!;
+    final isHirer = user.role == 'HIRER';
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           CircleAvatar(
             radius: 48,
-            backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+            backgroundColor: AppTheme.primary.withOpacity(0.1),
             backgroundImage:
                 user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
             child: user.avatarUrl == null
                 ? Text(
                     user.fullName.isNotEmpty
-                        ? user.fullName[0].toUpperCase()
+                        ? (user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?')
                         : '?',
                     style: const TextStyle(
                         fontSize: 32,
@@ -90,8 +101,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           Text(user.fullName,
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(user.role ?? '',
-              style: TextStyle(color: Colors.grey[600])),
+          Text(isHirer ? 'Người thuê' : 'Sinh viên',
+              style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500)),
           if (user.university != null) ...[
             const SizedBox(height: 4),
             Text(user.university!,
@@ -105,22 +116,20 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _StatColumn(
-                    label: 'Rating',
-                    value: user.averageRatingAsFreelancer
-                            ?.toStringAsFixed(1) ??
-                        '-',
+                    label: 'Đánh giá',
+                    value: isHirer ? (user.averageRatingAsHirer?.toStringAsFixed(1) ?? '-') : (user.averageRatingAsFreelancer?.toStringAsFixed(1) ?? '-'),
                   ),
                   Container(width: 1, height: 40, color: AppTheme.border),
                   _StatColumn(
-                    label: 'Completed',
+                    label: isHirer ? 'Đã đăng' : 'Hoàn thành',
                     value:
-                        '${user.completedTasksAsFreelancer ?? user.completedTasksAsHirer ?? 0}',
+                        '${isHirer ? user.completedTasksAsHirer ?? 0 : user.completedTasksAsFreelancer ?? 0}',
                   ),
                   Container(width: 1, height: 40, color: AppTheme.border),
                   _StatColumn(
-                    label: 'Reviews',
+                    label: 'Nhận xét',
                     value:
-                        '${user.totalReviewsAsFreelancer ?? user.totalReviewsAsHirer ?? 0}',
+                        '${isHirer ? user.totalReviewsAsHirer ?? 0 : user.totalReviewsAsFreelancer ?? 0}',
                   ),
                 ],
               ),
@@ -134,7 +143,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('About',
+                    const Text('Giới thiệu',
                         style:
                             TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
@@ -152,7 +161,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Skills',
+                    const Text('Kỹ năng',
                         style:
                             TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
@@ -163,7 +172,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                           .map((s) => Chip(
                                 label: Text(s),
                                 backgroundColor:
-                                    AppTheme.primary.withValues(alpha: 0.1),
+                                    AppTheme.primary.withOpacity(0.1),
                               ))
                           .toList(),
                     ),
@@ -172,6 +181,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ),
             ),
           ],
+          const SizedBox(height: 80), // Padding for FAB
         ],
       ),
     );

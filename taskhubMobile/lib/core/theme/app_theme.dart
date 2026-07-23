@@ -1,30 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   AppTheme._();
 
-  static const Color primary = Color(0xFF6366F1);
-  static const Color primaryDark = Color(0xFF4F46E5);
-  static const Color primaryLight = Color(0xFFA5B4FC);
-  static const Color accent = Color(0xFF10B981);
+  // Dark background colors (matching reference image)
+  static const Color background = Color(0xFF0F1B2D);   // Deep navy
+  static const Color surface = Color(0xFF162236);       // Card surface
+  static const Color surfaceElevated = Color(0xFF1C2D42); // Slightly lighter
+
+  // Accent / Primary colors
+  static const Color primary = Color(0xFF00C896);       // Bright teal-green
+  static const Color primaryDark = Color(0xFF00A87E);
+  static const Color primaryLight = Color(0xFF1A3A4A);
+  static const Color accent = Color(0xFF00E5B0);        // Lighter teal
+  static const Color accentBlue = Color(0xFF3B82F6);    // Blue accent
+
+  // Status colors
   static const Color error = Color(0xFFEF4444);
   static const Color warning = Color(0xFFF59E0B);
   static const Color info = Color(0xFF3B82F6);
-  static const Color success = Color(0xFF22C55E);
+  static const Color success = Color(0xFF00C896);
 
-  static const Color textPrimary = Color(0xFF111827);
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color textTertiary = Color(0xFF9CA3AF);
-  static const Color border = Color(0xFFE5E7EB);
-  static const Color background = Color(0xFFF9FAFB);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color card = Color(0xFFFFFFFF);
+  // Text colors
+  static const Color textPrimary = Color(0xFFEEF2FF);
+  static const Color textSecondary = Color(0xFF94A3B8);
+  static const Color textTertiary = Color(0xFF64748B);
+  static const Color border = Color(0xFF1E3A5F);
 
-  static ThemeData get lightTheme {
+  // Wallet card gradient colors
+  static const Color walletGrad1 = Color(0xFF0EA5E9); // sky-500
+  static const Color walletGrad2 = Color(0xFF6366F1); // indigo-500
+  static const Color walletGrad3 = Color(0xFF8B5CF6); // violet-500
+
+  static ThemeData get darkTheme {
+    final textTheme = GoogleFonts.nunitoTextTheme().copyWith(
+      displayLarge: GoogleFonts.nunito(
+          color: textPrimary, fontWeight: FontWeight.w800),
+      displayMedium: GoogleFonts.nunito(
+          color: textPrimary, fontWeight: FontWeight.w700),
+      headlineLarge: GoogleFonts.nunito(
+          color: textPrimary, fontWeight: FontWeight.w700),
+      headlineMedium: GoogleFonts.nunito(
+          color: textPrimary, fontWeight: FontWeight.w700),
+      titleLarge: GoogleFonts.nunito(
+          color: textPrimary, fontWeight: FontWeight.w700, fontSize: 20),
+      titleMedium: GoogleFonts.nunito(
+          color: textPrimary, fontWeight: FontWeight.w600, fontSize: 16),
+      titleSmall: GoogleFonts.nunito(
+          color: textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
+      bodyLarge: GoogleFonts.nunito(color: textPrimary, fontSize: 16),
+      bodyMedium: GoogleFonts.nunito(color: textSecondary, fontSize: 14),
+      bodySmall: GoogleFonts.nunito(color: textTertiary, fontSize: 12),
+      labelLarge: GoogleFonts.nunito(
+          color: textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
+    );
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primary,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.dark(
         primary: primary,
         secondary: accent,
         error: error,
@@ -33,47 +68,52 @@ class AppTheme {
         onSecondary: Colors.white,
         onSurface: textPrimary,
         onError: Colors.white,
+        surfaceContainerHighest: surfaceElevated,
       ),
       scaffoldBackgroundColor: background,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: surface,
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: background,
         foregroundColor: textPrimary,
         elevation: 0,
-        centerTitle: true,
-        titleTextStyle: TextStyle(
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.nunito(
           color: textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
         ),
+        iconTheme: const IconThemeData(color: textPrimary),
       ),
       cardTheme: CardThemeData(
-        color: card,
+        color: surface,
         elevation: 0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: border),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: border.withOpacity(0.6), width: 1),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surface,
+        fillColor: surfaceElevated,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: border),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: border),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: border, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: error),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: const TextStyle(color: textTertiary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -82,11 +122,11 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.nunito(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -94,27 +134,27 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: primary,
           minimumSize: const Size(double.infinity, 52),
-          side: const BorderSide(color: primary),
+          side: const BorderSide(color: primary, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.nunito(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primary,
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.nunito(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: border,
+      dividerTheme: DividerThemeData(
+        color: border.withOpacity(0.5),
         thickness: 1,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -122,8 +162,12 @@ class AppTheme {
         selectedItemColor: primary,
         unselectedItemColor: textTertiary,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        elevation: 0,
       ),
+      iconTheme: const IconThemeData(color: textSecondary),
     );
   }
+
+  // Keep a lightTheme alias pointing to darkTheme for compatibility
+  static ThemeData get lightTheme => darkTheme;
 }

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../providers.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/network/api_service.dart';
-import '../../../task/data/repositories/task_repository.dart';
 import '../../../task/data/models/task_models.dart';
 import '../../../../shared/widgets/common_widgets.dart';
 
@@ -16,7 +15,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  List<TaskResponse> _availableTasks = [];
+  List<TaskResponse> _tasksList = [];
+  double _escrowBalance = 0;
   bool _isLoading = true;
   String? _error;
 
@@ -31,18 +31,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _isLoading = true;
       _error = null;
     });
-    final result = await ref.read(taskRepositoryProvider).getAvailableTasks();
-    if (result.isSuccess) {
-      final tasks = result.data?.content ?? [];
-      setState(() {
-        _availableTasks = tasks.take(5).toList();
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _error = result.error?.message ?? 'Failed to load tasks';
-        _isLoading = false;
-      });
+
+    try {
+      final user = ref.read(currentUserProvider);
+      final repo = ref.read(taskRepositoryProvider);
+
+      if (user != null && user.isHirer) {
+        final result = await repo.getMyTasks(size: 1000);
+        if (result.isSuccess && mounted) {
+          final allTasks = result.data?.content ?? [];
+          final escrowedStatuses = ["ESCROW_FUNDED", "ACTIVE", "IN_PROGRESS", "SUBMITTED", "DISPUTED"];
+          double computedEscrow = 0;
+          for (var t in allTasks) {
+            if (escrowedStatuses.contains(t.status)) {
+              computedEscrow += t.budget * 1.05;
+            }
+          }
+          setState(() {
+            _tasksList = allTasks.take(5).toList();
+            _escrowBalance = computedEscrow;
+            _isLoading = false;
+          });
+        } else if (mounted) {
+          setState(() {
+            _error = result.error?.message ?? 'Không thể tải dữ liệu';
+            _isLoading = false;
+          });
+        }
+      } else {
+        final result = await repo.getAvailableTasks();
+        if (result.isSuccess && mounted) {
+          setState(() {
+            _tasksList = (result.data?.content ?? []).take(5).toList();
+            _isLoading = false;
+          });
+        } else if (mounted) {
+          setState(() {
+            _error = result.error?.message ?? 'Không thể tải dữ liệu';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Đã xảy ra lỗi: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -51,80 +87,121 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = ref.watch(currentUserProvider);
 
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
+        backgroundColor: AppTheme.background,
+        elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hello, ${user?.fullName ?? 'there'}!',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              'Xin chào, ${user?.fullName ?? 'bạn'}! 👋',
+              style: GoogleFonts.nunito(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+              ),
             ),
             Text(
-              user?.role ?? '',
-              style: TextStyle(
+              'Hôm nay bạn thế nào?',
+              style: GoogleFonts.nunito(
                 fontSize: 12,
                 color: AppTheme.textSecondary,
-                fontWeight: FontWeight.normal,
               ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => context.push('/notifications'),
+          Consumer(
+            builder: (context, ref, child) {
+              final unreadCountAsync = ref.watch(notificationUnreadCountProvider);
+              final unreadCount = unreadCountAsync.value ?? 0;
+              return Container(
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.border.withOpacity(0.6)),
+                ),
+                child: IconButton(
+                  icon: Badge(
+                    isLabelVisible: unreadCount > 0,
+                    label: Text(unreadCount.toString()),
+                    child: const Icon(Icons.notifications_outlined,
+                        color: AppTheme.textPrimary),
+                  ),
+                  onPressed: () => context.push('/notifications'),
+                ),
+              );
+            },
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
+        color: AppTheme.primary,
+        backgroundColor: AppTheme.surface,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Quick stats
-              _buildStatsCard(),
+              // Wallet Card
+              _buildWalletCard(user),
               const SizedBox(height: 24),
 
-              // Quick actions
+              // Section title: Quick actions
+              Text(
+                'Phím tắt nhanh',
+                style: GoogleFonts.nunito(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Quick action buttons grid
               _buildQuickActions(context, user),
               const SizedBox(height: 24),
 
-              // Available tasks
+              // Task List section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Available Tasks',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    'Công việc gần đây',
+                    style: GoogleFonts.nunito(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
                   TextButton(
-                    onPressed: () => context.push('/tasks/available'),
-                    child: const Text('See all'),
+                    onPressed: () => context.push(
+                        user?.isHirer == true ? '/tasks' : '/tasks/available'),
+                    child: Text(
+                      'Xem tất cả',
+                      style: GoogleFonts.nunito(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
 
               if (_isLoading)
-                const Center(child: CircularProgressIndicator())
+                const Center(
+                    child: CircularProgressIndicator(color: AppTheme.primary))
               else if (_error != null)
-                ErrorDisplay(
-                  message: _error!,
-                  onRetry: _loadData,
-                )
-              else if (_availableTasks.isEmpty)
-                const EmptyState(
-                  icon: Icons.assignment_outlined,
-                  title: 'No available tasks',
-                  subtitle: 'Check back later for new opportunities',
-                )
+                ErrorDisplay(message: _error!, onRetry: _loadData)
+              else if (_tasksList.isEmpty)
+                _buildEmptyProjects()
               else
-                ..._availableTasks.map((task) => _TaskCard(task: task)),
+                ..._tasksList.map((task) => _TaskCard(task: task)),
             ],
           ),
         ),
@@ -132,19 +209,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildStatsCard() {
-    final user = ref.watch(currentUserProvider);
+  Widget _buildWalletCard(dynamic user) {
+    final isHirer = user?.isHirer ?? false;
 
-    return Card(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppTheme.primary, AppTheme.primaryDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF10B981), // emerald-500
+            Color(0xFF059669), // emerald-600
+            Color(0xFF047857), // emerald-700
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF059669).withOpacity(0.45),
+            blurRadius: 28,
+            spreadRadius: 0,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: const Color(0xFF10B981).withOpacity(0.25),
+            blurRadius: 16,
+            spreadRadius: -4,
+            offset: const Offset(-4, 4),
+          ),
+        ],
+      ),
+      child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,38 +247,87 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Wallet Balance',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isHirer ? 'Ví Hirer' : 'Ví Freelancer',
+                      style: GoogleFonts.nunito(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Số dư khả dụng',
+                      style: GoogleFonts.nunito(
+                        color: Colors.white.withOpacity(0.65),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward, color: Colors.white70),
-                  onPressed: () => context.push('/wallet'),
+                Row(
+                  children: [
+                    _WalletActionBtn(
+                      icon: Icons.add,
+                      label: 'Nạp tiền',
+                      onTap: () => context.push('/wallet'),
+                    ),
+                    const SizedBox(width: 10),
+                    _WalletActionBtn(
+                      icon: Icons.arrow_forward,
+                      label: 'Rút tiền',
+                      onTap: () => context.push('/wallet'),
+                    ),
+                  ],
                 ),
               ],
             ),
+            const SizedBox(height: 12),
             Text(
-              '${user?.walletBalance?.toStringAsFixed(0) ?? '0'} VND',
-              style: const TextStyle(
+              '${_formatBalance(user?.walletBalance ?? 0)} VND',
+              style: GoogleFonts.nunito(
                 color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 16),
+            Container(
+              height: 1,
+              color: Colors.white.withOpacity(0.2),
+            ),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
                   child: _StatItem(
-                    label: 'As Freelancer',
-                    value: '${user?.completedTasksAsFreelancer ?? 0}',
+                    label: isHirer ? 'Đã đăng' : 'Hoàn thành',
+                    value: isHirer
+                        ? '${user?.completedTasksAsHirer ?? 0}'
+                        : '${user?.completedTasksAsFreelancer ?? 0}',
                   ),
                 ),
+                Container(width: 1, height: 32, color: Colors.white.withOpacity(0.2)),
+                if (isHirer) ...[
+                  Expanded(
+                    child: _StatItem(
+                      label: 'Đang ký quỹ',
+                      value: _formatBalance(_escrowBalance),
+                      suffix: ' đ',
+                    ),
+                  ),
+                  Container(width: 1, height: 32, color: Colors.white.withOpacity(0.2)),
+                ],
                 Expanded(
                   child: _StatItem(
-                    label: 'Rating',
-                    value: user?.averageRatingAsFreelancer?.toStringAsFixed(1) ??
-                        '-',
+                    label: 'Đánh giá',
+                    value: isHirer
+                        ? (user?.averageRatingAsHirer?.toStringAsFixed(1) ?? '–')
+                        : (user?.averageRatingAsFreelancer?.toStringAsFixed(1) ?? '–'),
+                    suffix: ' ⭐',
                   ),
                 ),
               ],
@@ -194,77 +338,165 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  String _formatBalance(double balance) {
+    if (balance >= 1000000) {
+      return '${(balance / 1000000).toStringAsFixed(1)}M';
+    } else if (balance >= 1000) {
+      return '${(balance / 1000).toStringAsFixed(0)}K';
+    }
+    return balance.toStringAsFixed(0);
+  }
+
   Widget _buildQuickActions(BuildContext context, dynamic user) {
     final isHirer = user?.isHirer ?? false;
-    final isStudent = user?.isStudent ?? false;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        if (isHirer || isStudent)
-          _QuickAction(
-            icon: Icons.add_circle_outline,
-            label: 'Available\nTasks',
-            onTap: () => context.push('/tasks/available'),
+    final hirerActions = <Map<String, dynamic>>[
+      {
+        'icon': Icons.add_circle_outline_rounded,
+        'label': 'Đăng việc',
+        'onTap': () => context.push('/tasks/create'),
+        'color': const Color(0xFF10B981),
+      },
+      {
+        'icon': Icons.assignment_rounded,
+        'label': 'Công việc',
+        'onTap': () => context.push('/tasks'),
+        'color': const Color(0xFF3B82F6),
+      },
+      {
+        'icon': Icons.assignment_turned_in_rounded,
+        'label': 'Bài nộp',
+        'onTap': () => context.push('/submissions'),
+        'color': const Color(0xFF8B5CF6),
+      },
+      {
+        'icon': Icons.account_balance_wallet_rounded,
+        'label': 'Ví của tôi',
+        'onTap': () => context.push('/wallet'),
+        'color': const Color(0xFF059669),
+      },
+      {
+        'icon': Icons.chat_bubble_rounded,
+        'label': 'Tin nhắn',
+        'onTap': () => context.push('/messages'),
+        'color': const Color(0xFFF59E0B),
+      },
+    ];
+
+    final studentActions = <Map<String, dynamic>>[
+      {
+        'icon': Icons.search_rounded,
+        'label': 'Tìm việc',
+        'onTap': () => context.push('/tasks/available'),
+        'color': const Color(0xFF3B82F6),
+      },
+      {
+        'icon': Icons.work_rounded,
+        'label': 'Đang làm',
+        'onTap': () => context.push('/tasks'),
+        'color': const Color(0xFF10B981),
+      },
+      {
+        'icon': Icons.assignment_turned_in_rounded,
+        'label': 'Bài nộp',
+        'onTap': () => context.push('/submissions'),
+        'color': const Color(0xFFEF4444),
+      },
+      {
+        'icon': Icons.account_balance_wallet_rounded,
+        'label': 'Ví của tôi',
+        'onTap': () => context.push('/wallet'),
+        'color': const Color(0xFF059669),
+      },
+      {
+        'icon': Icons.chat_bubble_rounded,
+        'label': 'Tin nhắn',
+        'onTap': () => context.push('/messages'),
+        'color': const Color(0xFFF59E0B),
+      },
+      {
+        'icon': Icons.person_rounded,
+        'label': 'Hồ sơ',
+        'onTap': () => context.push('/profile'),
+        'color': const Color(0xFF8B5CF6),
+      },
+    ];
+
+    final actions = isHirer ? hirerActions : studentActions;
+
+    return GridView.count(
+      crossAxisCount: 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.1,
+      children: actions
+          .map((a) => _QuickAction(
+                icon: a['icon'] as IconData,
+                label: a['label'] as String,
+                color: a['color'] as Color,
+                onTap: a['onTap'] as VoidCallback,
+              ))
+          .toList(),
+    );
+  }
+
+  Widget _buildEmptyProjects() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.border.withOpacity(0.5),
+          style: BorderStyle.solid,
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.work_outline_rounded,
+                color: AppTheme.primary, size: 28),
           ),
-        if (isHirer) ...[
-          _QuickAction(
-            icon: Icons.add_box_outlined,
-            label: 'Create\nTask',
-            onTap: () => context.push('/tasks/create'),
+          const SizedBox(height: 12),
+          Text(
+            'Chưa có công việc nào',
+            style: GoogleFonts.nunito(
+              color: AppTheme.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
           ),
-          _QuickAction(
-            icon: Icons.assignment_outlined,
-            label: 'My\nTasks',
-            onTap: () => context.push('/tasks'),
+          const SizedBox(height: 4),
+          Text(
+            'Các công việc gần đây sẽ hiển thị tại đây',
+            style: GoogleFonts.nunito(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
-        _QuickAction(
-          icon: Icons.wallet_outlined,
-          label: 'Wallet',
-          onTap: () => context.push('/wallet'),
-        ),
-        _QuickAction(
-          icon: Icons.chat_outlined,
-          label: 'Messages',
-          onTap: () => context.push('/messages'),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
+// ─── Wallet action button ────────────────────────────────────────────────────
 
-  const _StatItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
+class _WalletActionBtn extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
-  const _QuickAction({
+  const _WalletActionBtn({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -274,28 +506,135 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withOpacity(0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: Colors.white),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            child: Icon(icon, color: AppTheme.primary),
-          ),
-          const SizedBox(height: 6),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Stat item inside wallet card ────────────────────────────────────────────
+
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? suffix;
+
+  const _StatItem({required this.label, required this.value, this.suffix});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: Colors.white.withOpacity(0.65),
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$value${suffix ?? ''}',
+            style: GoogleFonts.nunito(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+// ─── Quick action button ─────────────────────────────────────────────────────
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppTheme.border.withOpacity(0.7)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 11,
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Task card ───────────────────────────────────────────────────────────────
 
 class _TaskCard extends StatelessWidget {
   final TaskResponse task;
@@ -304,11 +643,16 @@ class _TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.border.withOpacity(0.6)),
+      ),
       child: InkWell(
         onTap: () => context.push('/tasks/${task.id}'),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -319,9 +663,10 @@ class _TaskCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       task.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w700,
                         fontSize: 15,
+                        color: AppTheme.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -333,8 +678,8 @@ class _TaskCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 task.description,
-                style: TextStyle(
-                  color: Colors.grey[600],
+                style: GoogleFonts.nunito(
+                  color: AppTheme.textSecondary,
                   fontSize: 13,
                 ),
                 maxLines: 2,
@@ -343,21 +688,31 @@ class _TaskCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Icon(Icons.attach_money, size: 16, color: AppTheme.accent),
-                  Text(
-                    '${task.budget.toStringAsFixed(0)} VND',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.accent,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${task.budget.toStringAsFixed(0)} VND',
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primary,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   const Spacer(),
                   if (task.category != null) ...[
-                    Icon(Icons.category_outlined, size: 14, color: Colors.grey[500]),
+                    Icon(Icons.category_outlined,
+                        size: 13, color: AppTheme.textTertiary),
                     const SizedBox(width: 4),
                     Text(
                       task.category!,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      style: GoogleFonts.nunito(
+                          fontSize: 12, color: AppTheme.textTertiary),
                     ),
                   ],
                 ],

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/app_theme.dart';
 
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
@@ -65,22 +67,25 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: Colors.grey[400]),
+            Icon(icon, size: 64, color: AppTheme.textTertiary),
             const SizedBox(height: 16),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: GoogleFonts.nunito(
+                color: AppTheme.textSecondary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
               textAlign: TextAlign.center,
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
               Text(
                 subtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[500],
-                    ),
+                style: GoogleFonts.nunito(
+                  color: AppTheme.textTertiary,
+                  fontSize: 13,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -125,7 +130,7 @@ class ErrorDisplay extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: const Text('Thử lại'),
               ),
             ],
           ],
@@ -147,54 +152,54 @@ class StatusBadge extends StatelessWidget {
 
     switch (status.toUpperCase()) {
       case 'DRAFT':
-        bgColor = Colors.grey.shade100;
-        textColor = Colors.grey.shade700;
+        bgColor = const Color(0xFF1E2D3D);
+        textColor = const Color(0xFF94A3B8);
         break;
       case 'LOCKED':
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade700;
+        bgColor = const Color(0xFF1A2B45);
+        textColor = const Color(0xFF60A5FA);
         break;
       case 'ESCROW_FUNDED':
-        bgColor = Colors.indigo.shade50;
-        textColor = Colors.indigo.shade700;
+        bgColor = const Color(0xFF251A45);
+        textColor = const Color(0xFFA78BFA);
         break;
       case 'ACTIVE':
-        bgColor = Colors.green.shade50;
-        textColor = Colors.green.shade700;
+        bgColor = const Color(0xFF0F2A1A);
+        textColor = const Color(0xFF34D399);
         break;
       case 'IN_PROGRESS':
-        bgColor = Colors.orange.shade50;
-        textColor = Colors.orange.shade700;
+        bgColor = const Color(0xFF2A1A0F);
+        textColor = const Color(0xFFFB923C);
         break;
       case 'SUBMITTED':
-        bgColor = Colors.amber.shade50;
-        textColor = Colors.amber.shade700;
+        bgColor = const Color(0xFF2A230F);
+        textColor = const Color(0xFFFBBF24);
         break;
       case 'COMPLETED':
-        bgColor = Colors.teal.shade50;
-        textColor = Colors.teal.shade700;
+        bgColor = const Color(0xFF0F2028);
+        textColor = const Color(0xFF2DD4BF);
         break;
       case 'DISPUTED':
-        bgColor = Colors.red.shade50;
-        textColor = Colors.red.shade700;
+        bgColor = const Color(0xFF2A0F18);
+        textColor = const Color(0xFFF87171);
         break;
       default:
-        bgColor = Colors.grey.shade100;
-        textColor = Colors.grey.shade700;
+        bgColor = const Color(0xFF1E2D3D);
+        textColor = const Color(0xFF94A3B8);
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         status.replaceAll('_', ' '),
-        style: TextStyle(
+        style: GoogleFonts.nunito(
           color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../providers.dart';
@@ -20,41 +21,69 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   int? _currentUserId;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _currentUserId = ref.read(currentUserProvider)?.id;
     _loadMessages();
+    _startPolling();
   }
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadMessages() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) {
+        _loadMessages(silent: true);
+      }
     });
+  }
+
+  Future<void> _loadMessages({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     final result = await ref
         .read(messagingRepositoryProvider)
         .getMessages(widget.conversationId);
     if (result.isSuccess && mounted) {
       final msgs = result.data?.content ?? [];
       msgs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      
+      bool shouldScroll = false;
+      if (silent && _messages.isNotEmpty && msgs.isNotEmpty && msgs.length > _messages.length) {
+         if (_scrollController.hasClients &&
+             _scrollController.position.maxScrollExtent - _scrollController.position.pixels < 100) {
+           shouldScroll = true;
+         }
+      } else if (!silent) {
+         shouldScroll = true;
+      }
+
       setState(() {
         _messages = msgs;
-        _isLoading = false;
+        if (!silent) _isLoading = false;
       });
       // Mark as read
       ref.read(messagingRepositoryProvider).markAsRead(widget.conversationId);
-    } else if (mounted) {
+
+      if (shouldScroll) {
+        _scrollToBottom();
+      }
+    } else if (mounted && !silent) {
       setState(() {
-        _error = result.error?.message ?? 'Failed to load messages';
+        _error = result.error?.message ?? 'Tải tin nhắn thất bại';
         _isLoading = false;
       });
     }
@@ -93,7 +122,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: const Text('Trò chuyện'),
       ),
       body: Column(
         children: [
@@ -106,7 +135,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             Text(_error!, style: const TextStyle(color: Colors.red)))
                     : _messages.isEmpty
                         ? const Center(
-                            child: Text('No messages yet. Say hello!',
+                            child: Text('Chưa có tin nhắn. Hãy bắt đầu trò chuyện!',
                                 style: TextStyle(color: Colors.grey)))
                         : ListView.builder(
                             controller: _scrollController,
@@ -128,7 +157,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -141,7 +170,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     child: TextField(
                       controller: _textController,
                       decoration: InputDecoration(
-                        hintText: 'Type a message...',
+                        hintText: 'Nhập tin nhắn...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),

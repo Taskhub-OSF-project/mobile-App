@@ -9,7 +9,7 @@ class AuthResponse {
   @JsonKey(name: 'token')
   final String accessToken;
   @JsonKey(name: 'refreshToken')
-  final String refreshToken;
+  final String? refreshToken;
   @JsonKey(name: 'userId')
   final int userId;
   final String email;
@@ -17,16 +17,16 @@ class AuthResponse {
   final String fullName;
   final UserRole role;
   @JsonKey(name: 'expiresAt')
-  final int expiresAt;
+  final int? expiresAt;
 
   AuthResponse({
     required this.accessToken,
-    required this.refreshToken,
+    this.refreshToken,
     required this.userId,
     required this.email,
     required this.fullName,
     required this.role,
-    required this.expiresAt,
+    this.expiresAt,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) =>
@@ -61,6 +61,7 @@ class RegisterRequest {
   final String? phoneNumber;
   @JsonKey(name: 'dateOfBirth')
   final String? dateOfBirth;
+  final int? age;
 
   RegisterRequest({
     required this.email,
@@ -71,6 +72,7 @@ class RegisterRequest {
     required this.role,
     this.phoneNumber,
     this.dateOfBirth,
+    this.age,
   });
 
   factory RegisterRequest.fromJson(Map<String, dynamic> json) =>
@@ -182,4 +184,44 @@ class LogoutRequest {
       _$LogoutRequestFromJson(json);
 
   Map<String, dynamic> toJson() => _$LogoutRequestToJson(this);
+}
+
+@JsonSerializable()
+class RecoverAccountRequest {
+  final String email;
+
+  RecoverAccountRequest({required this.email});
+
+  factory RecoverAccountRequest.fromJson(Map<String, dynamic> json) =>
+      _$RecoverAccountRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RecoverAccountRequestToJson(this);
+}
+
+@JsonSerializable()
+class PasswordResetRequest {
+  final String email;
+
+  PasswordResetRequest({required this.email});
+
+  factory PasswordResetRequest.fromJson(Map<String, dynamic> json) =>
+      _$PasswordResetRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PasswordResetRequestToJson(this);
+}
+
+@JsonSerializable()
+class PasswordResetConfirmRequest {
+  final String token;
+  final String newPassword;
+
+  PasswordResetConfirmRequest({
+    required this.token,
+    required this.newPassword,
+  });
+
+  factory PasswordResetConfirmRequest.fromJson(Map<String, dynamic> json) =>
+      _$PasswordResetConfirmRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PasswordResetConfirmRequestToJson(this);
 }

@@ -45,12 +45,12 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dat lai mat khau thanh cong.')),
+          const SnackBar(content: Text('Đặt lại mật khẩu thành công.')),
         );
         context.go('/login');
       } else {
         final errMsg = ref.read(authNotifierProvider).errorMessage;
-        setState(() => _error = errMsg ?? 'Khong the dat lai mat khau.');
+        setState(() => _error = errMsg ?? 'Không thể đặt lại mật khẩu.');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -61,7 +61,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dat lai mat khau'),
+        title: const Text('Đặt lại mật khẩu'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/login'),
@@ -78,14 +78,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               children: [
                 const SizedBox(height: 16),
                 Text(
-                  'Mat khau moi',
+                  'Mật khẩu mới',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Nhap mat khau moi cho tai khoan cua ban.',
+                  'Nhập mật khẩu mới cho tài khoản của bạn.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -96,7 +96,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: AppTheme.error.withValues(alpha: 0.1),
+                      color: AppTheme.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -115,7 +115,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Mat khau moi',
+                    labelText: 'Mật khẩu mới',
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -125,8 +125,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Nhap mat khau moi';
-                    if (value.length < 6) return 'Mat khau it nhat 6 ky tu';
+                    if (value == null || value.isEmpty) return 'Nhập mật khẩu mới';
+                    if (value.length < 6) return 'Mật khẩu ít nhất 6 ký tự';
                     return null;
                   },
                 ),
@@ -135,7 +135,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                   controller: _confirmController,
                   obscureText: _obscureConfirm,
                   decoration: InputDecoration(
-                    labelText: 'Xac nhan mat khau',
+                    labelText: 'Xác nhận mật khẩu',
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -145,15 +145,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Xac nhan mat khau';
-                    if (value != _passwordController.text) return 'Mat khau khong khop';
+                    if (value == null || value.isEmpty) return 'Xác nhận mật khẩu';
+                    if (value != _passwordController.text) return 'Mật khẩu không khớp';
                     return null;
                   },
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: _loading ? null : _reset,
-                  child: Text(_loading ? 'Dang dat lai...' : 'Dat lai mat khau'),
+                  child: Text(_loading ? 'Đang đặt lại...' : 'Đặt lại mật khẩu'),
                 ),
               ],
             ),

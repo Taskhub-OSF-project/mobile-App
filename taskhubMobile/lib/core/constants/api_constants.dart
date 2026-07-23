@@ -25,6 +25,7 @@ class ApiConstants {
   static String userById(int id) => '$apiPrefix/users/$id';
   static const String changePassword = '$apiPrefix/users/change-password';
   static const String setAvailability = '$apiPrefix/users/me/availability';
+  static const String switchRole = '$apiPrefix/users/switch-role';
 
   // Tasks
   static const String tasks = '$apiPrefix/tasks';
@@ -84,6 +85,7 @@ class ApiConstants {
   static const String conversations = '$apiPrefix/messaging/conversations';
   static const String conversationsPaged = '$apiPrefix/messaging/conversations/paged';
   static String createConversation(int taskId) => '$apiPrefix/messaging/conversations/task/$taskId';
+  static String createConversationWithUser(int taskId, int userId) => '$apiPrefix/messaging/conversations/task/$taskId/user/$userId';
   static String sendMessage(int convId) => '$apiPrefix/messaging/conversations/$convId/messages';
   static String getMessages(int convId) => '$apiPrefix/messaging/conversations/$convId/messages';
   static String markConversationRead(int convId) => '$apiPrefix/messaging/conversations/$convId/read';

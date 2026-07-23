@@ -31,21 +31,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    bool success;
-    if (_loginByPhone) {
-      success = await ref.read(authNotifierProvider.notifier).loginByPhone(
-            _phoneController.text.trim(),
-            _passwordController.text,
-          );
-    } else {
-      success = await ref.read(authNotifierProvider.notifier).login(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
-    }
+    try {
+      bool success;
+      if (_loginByPhone) {
+        success = await ref.read(authNotifierProvider.notifier).loginByPhone(
+              _phoneController.text.trim(),
+              _passwordController.text,
+            );
+      } else {
+        success = await ref.read(authNotifierProvider.notifier).login(
+              _emailController.text.trim(),
+              _passwordController.text,
+            );
+      }
 
-    if (success && mounted) {
-      context.go('/home');
+      if (success && mounted) {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đăng nhập thất bại: $e')),
+        );
+      }
+      ref.read(authNotifierProvider.notifier).clearError();
     }
   }
 
@@ -66,37 +75,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   const SizedBox(height: 48),
                   Center(
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const Icon(
-                        Icons.assignment_outlined,
-                        size: 40,
-                        color: AppTheme.primary,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF059669),
+                                Color(0xFF0D9488),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF059669).withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.bolt,
+                            size: 24,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        RichText(
+                          text: const TextSpan(
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Task',
+                                style: TextStyle(color: AppTheme.textPrimary),
+                              ),
+                              TextSpan(
+                                text: 'Hub',
+                                style: TextStyle(color: Color(0xFF059669)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   Text(
-                    'Welcome back',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Sign in to continue',
+                    'Đăng nhập để tiếp tục',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppTheme.textSecondary,
                         ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 36),
                   Row(
                     children: [
                       Expanded(
@@ -137,7 +177,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             child: Text(
-                              'Phone',
+                              'Số điện thoại',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontWeight: _loginByPhone ? FontWeight.bold : FontWeight.normal,
@@ -155,7 +195,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: AppTheme.error.withValues(alpha: 0.1),
+                        color: AppTheme.error.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -190,10 +230,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return 'Vui lòng nhập email của bạn';
                         }
                         if (!value.contains('@')) {
-                          return 'Please enter a valid email';
+                          return 'Vui lòng nhập email hợp lệ';
                         }
                         return null;
                       },
@@ -204,12 +244,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
-                        labelText: 'Phone',
+                        labelText: 'Số điện thoại',
                         prefixIcon: Icon(Icons.phone_outlined),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your phone number';
+                          return 'Vui lòng nhập số điện thoại của bạn';
                         }
                         return null;
                       },
@@ -221,7 +261,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _login(),
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: 'Mật khẩu',
                       prefixIcon: const Icon(Icons.lock_outlined),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -236,7 +276,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
+                        return 'Vui lòng nhập mật khẩu của bạn';
                       }
                       return null;
                     },
@@ -246,7 +286,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () => context.go('/forgot-password'),
-                      child: const Text('Forgot password?'),
+                      child: const Text('Quên mật khẩu?'),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -262,19 +302,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Sign In'),
+                        : const Text('Đăng nhập'),
                   ),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        "Chưa có tài khoản? ",
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                       TextButton(
                         onPressed: () => context.go('/register'),
-                        child: const Text('Sign Up'),
+                        child: const Text('Đăng ký'),
                       ),
                     ],
                   ),

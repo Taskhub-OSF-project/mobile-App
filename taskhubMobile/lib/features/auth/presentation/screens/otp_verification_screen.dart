@@ -64,17 +64,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     setState(() {});
   }
 
-  void _onPaste(String text) {
-    final digits = text.replaceAll(RegExp(r'\D'), '').substring(0, 6);
-    for (int i = 0; i < digits.length; i++) {
-      _controllers[i].text = digits[i];
-    }
-    if (digits.length == 6) {
-      _focusNodes.last.unfocus();
-      _verifyOtp();
-    }
-    setState(() {});
-  }
+
 
   Future<void> _verifyOtp() async {
     if (_otpCode.length != 6) return;
@@ -105,7 +95,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
       _timer?.cancel();
       _startCountdown();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Da gui lai ma OTP.')),
+        const SnackBar(content: Text('Đã gửi lại mã OTP.')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -122,7 +112,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Xac thuc OTP'),
+        title: const Text('Xác thực OTP'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/login'),
@@ -137,7 +127,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
             children: [
               const SizedBox(height: 16),
               Text(
-                'Nhap ma xac thuc',
+                'Nhập mã xác thực',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -145,7 +135,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Ma OTP 6 chu so da duoc gui den\n${widget.phone}',
+                'Mã OTP 6 chữ số đã được gửi đến\n${widget.phone}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppTheme.textSecondary,
                     ),
@@ -181,7 +171,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           counterText: '',
                           filled: true,
                           fillColor: _controllers[index].text.isNotEmpty
-                              ? AppTheme.primary.withValues(alpha: 0.1)
+                              ? AppTheme.primary.withOpacity(0.1)
                               : Colors.grey[100],
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -202,7 +192,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Ma co hieu luc trong: $_formattedCountdown',
+                'Mã có hiệu lực trong: $_formattedCountdown',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppTheme.textSecondary,
                     ),
@@ -213,7 +203,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 Center(
                   child: TextButton(
                     onPressed: _loading ? null : _resend,
-                    child: const Text('Gui lai ma OTP'),
+                    child: const Text('Gửi lại mã OTP'),
                   ),
                 )
               else
@@ -221,7 +211,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _otpCode.length == 6 && !_loading ? _verifyOtp : null,
-                child: const Text('Xac thuc'),
+                child: const Text('Xác thực'),
               ),
             ],
           ),

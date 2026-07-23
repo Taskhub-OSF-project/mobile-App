@@ -22,6 +22,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   String? _error;
   int _page = 0;
   bool _hasMore = true;
+  double _escrowBalance = 0;
 
   final _vndFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '');
 
@@ -46,10 +47,27 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     final repo = ref.read(walletRepositoryProvider);
     final balanceResult = await repo.getBalance();
     final txResult = await repo.getTransactionsPaged();
+    
+    double computedEscrow = 0;
+    final user = ref.read(currentUserProvider);
+    if (user != null && user.isHirer) {
+      final taskRepo = ref.read(taskRepositoryProvider);
+      final tasksResult = await taskRepo.getMyTasks(size: 1000);
+      if (tasksResult.isSuccess) {
+        final allTasks = tasksResult.data?.content ?? [];
+        final escrowedStatuses = ["ESCROW_FUNDED", "ACTIVE", "IN_PROGRESS", "SUBMITTED", "DISPUTED"];
+        for (var t in allTasks) {
+          if (escrowedStatuses.contains(t.status)) {
+            computedEscrow += t.budget * 1.05;
+          }
+        }
+      }
+    }
 
     if (mounted) {
       setState(() {
         _wallet = balanceResult.data;
+        _escrowBalance = computedEscrow;
         _transactions = txResult.data?.content ?? [];
         _hasMore = txResult.data?.hasNext ?? false;
         _isLoading = false;
@@ -61,12 +79,12 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wallet'),
+        title: const Text('Ví'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Transactions'),
+            Tab(text: 'Tổng quan'),
+            Tab(text: 'Giao dịch'),
           ],
         ),
       ),
@@ -99,7 +117,11 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [AppTheme.primary, AppTheme.primaryDark],
+                    colors: [
+                      Color(0xFF10B981), // emerald-500
+                      Color(0xFF059669), // emerald-600
+                      Color(0xFF047857), // emerald-700
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -109,7 +131,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Available Balance',
+                    const Text('Số dư khả dụng',
                         style: TextStyle(color: Colors.white70, fontSize: 14)),
                     const SizedBox(height: 8),
                     Text(
@@ -120,6 +142,20 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    if (_escrowBalance > 0) ...[
+                      const SizedBox(height: 12),
+                      const Text('Đang giữ ký quỹ (Escrow)',
+                          style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_vndFormat.format(_escrowBalance)} VND',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -127,7 +163,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                           child: ElevatedButton.icon(
                             onPressed: () => _showAmountDialog(true),
                             icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Top Up'),
+                            label: const Text('Nạp tiền'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               foregroundColor: AppTheme.primary,
@@ -139,7 +175,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                           child: OutlinedButton.icon(
                             onPressed: () => _showAmountDialog(false),
                             icon: const Icon(Icons.remove, size: 18),
-                            label: const Text('Withdraw'),
+                            label: const Text('Rút tiền'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
                               side: const BorderSide(color: Colors.white),
@@ -160,11 +196,11 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Platform Fee: 5% per task',
+                    const Text('Phí nền tảng: 5% mỗi công việc',
                         style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     Text(
-                      'Funds are held in escrow until task completion.',
+                      'Tiền được giữ an toàn (escrow) cho đến khi hoàn thành công việc.',
                       style: TextStyle(color: Colors.grey[600], fontSize: 13),
                     ),
                   ],
@@ -181,8 +217,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     if (_transactions.isEmpty) {
       return const EmptyState(
         icon: Icons.receipt_long_outlined,
-        title: 'No transactions yet',
-        subtitle: 'Your transaction history will appear here',
+        title: 'Chưa có giao dịch nào',
+        subtitle: 'Lịch sử giao dịch của bạn sẽ hiển thị ở đây',
       );
     }
 
@@ -198,8 +234,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: tx.isPositive
-                    ? AppTheme.success.withValues(alpha: 0.1)
-                    : AppTheme.error.withValues(alpha: 0.1),
+                    ? AppTheme.success.withOpacity(0.1)
+                    : AppTheme.error.withOpacity(0.1),
                 child: Icon(
                   tx.isPositive ? Icons.arrow_downward : Icons.arrow_upward,
                   color: tx.isPositive ? AppTheme.success : AppTheme.error,
@@ -227,26 +263,26 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     final result = await showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isDeposit ? 'Top Up' : 'Withdraw'),
+        title: Text(isDeposit ? 'Nạp tiền' : 'Rút tiền'),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
-            labelText: 'Amount (VND)',
-            hintText: 'e.g., 100000',
+            labelText: 'Số tiền (VND)',
+            hintText: 'VD: 100000',
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () {
               final amount = double.tryParse(controller.text);
               Navigator.pop(context, amount);
             },
-            child: const Text('Confirm'),
+            child: const Text('Xác nhận'),
           ),
         ],
       ),
@@ -262,13 +298,13 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                '${isDeposit ? 'Top up' : 'Withdraw'} of ${_vndFormat.format(result)} VND successful!'),
+                '${isDeposit ? 'Nạp' : 'Rút'} ${_vndFormat.format(result)} VND thành công!'),
           ),
         );
         _loadData();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(apiResult.error?.message ?? 'Transaction failed')),
+          SnackBar(content: Text(apiResult.error?.message ?? 'Giao dịch thất bại')),
         );
       }
     }

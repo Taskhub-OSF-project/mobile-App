@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'providers.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
+import 'features/auth/presentation/screens/student_profile_setup_screen.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
+import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/auth/presentation/screens/forgot_password_screen.dart';
 import 'features/auth/presentation/screens/otp_verification_screen.dart';
 import 'features/auth/presentation/screens/reset_password_screen.dart';
@@ -19,20 +21,22 @@ import 'features/wallet/presentation/screens/wallet_screen.dart';
 import 'features/notification/presentation/screens/notification_screen.dart';
 import 'features/messaging/presentation/screens/conversation_list_screen.dart';
 import 'features/messaging/presentation/screens/chat_screen.dart';
+import 'features/search/presentation/screens/search_screen.dart';
+import 'features/task/presentation/screens/submissions_screen.dart';
 import 'shared/widgets/main_scaffold.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authNotifierProvider);
-
   return GoRouter(
     initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(ref),
     redirect: (context, state) {
+      final authState = ref.read(authNotifierProvider);
       final isAuth = authState.isAuthenticated;
       final isLoggingIn = state.matchedLocation == '/login';
       final isRegistering = state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/';
-      final isAuthRoute = isLoggingIn || isRegistering || isSplash ||
+      final isOnboarding = state.matchedLocation == '/onboarding';
+      final isAuthRoute = isLoggingIn || isRegistering || isSplash || isOnboarding ||
           state.matchedLocation == '/forgot-password' ||
           state.matchedLocation == '/otp-verify' ||
           state.matchedLocation == '/reset-password';
@@ -46,7 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      if (isAuth && (isLoggingIn || isRegistering || isSplash)) {
+      if (isAuth && (isLoggingIn || isRegistering || isSplash || isOnboarding)) {
         return '/home';
       }
 
@@ -58,12 +62,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/student-profile-setup',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return StudentProfileSetupScreen(
+            email: extra['email'] as String? ?? '',
+            password: extra['password'] as String? ?? '',
+            fullName: extra['fullName'] as String? ?? '',
+            phoneNumber: extra['phoneNumber'] as String? ?? '',
+            age: extra['age'] as int?,
+          );
+        },
       ),
       GoRoute(
         path: '/forgot-password',
@@ -95,6 +116,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/home',
             builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/submissions',
+            builder: (context, state) => const SubmissionsScreen(),
           ),
           GoRoute(
             path: '/tasks',
@@ -137,6 +162,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/notifications',
             builder: (context, state) => const NotificationScreen(),
+          ),
+          GoRoute(
+            path: '/search',
+            builder: (context, state) => const SearchScreen(),
           ),
           GoRoute(
             path: '/messages',
