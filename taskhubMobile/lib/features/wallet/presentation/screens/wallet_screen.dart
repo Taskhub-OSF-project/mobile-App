@@ -5,6 +5,8 @@ import '../../../../providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../wallet/data/models/wallet_models.dart';
 import '../../../../shared/widgets/common_widgets.dart';
+import 'momo_deposit_sheet.dart';
+import 'momo_withdraw_sheet.dart';
 
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
@@ -161,20 +163,21 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => _showAmountDialog(true),
-                            icon: const Icon(Icons.add, size: 18),
+                            onPressed: () => _showMomoDepositSheet(),
+                            icon: const Text('M', style: TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 16)),
                             label: const Text('Nạp tiền'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              foregroundColor: AppTheme.primary,
+                              foregroundColor: const Color(0xFFAE2070),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _showAmountDialog(false),
-                            icon: const Icon(Icons.remove, size: 18),
+                            onPressed: () => _showMomoWithdrawSheet(),
+                            icon: const Icon(Icons.arrow_upward_rounded, size: 18),
                             label: const Text('Rút tiền'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
@@ -258,55 +261,33 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     );
   }
 
-  Future<void> _showAmountDialog(bool isDeposit) async {
-    final controller = TextEditingController();
-    final result = await showDialog<double>(
+  Future<void> _showMomoDepositSheet() async {
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isDeposit ? 'Nạp tiền' : 'Rút tiền'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Số tiền (VND)',
-            hintText: 'VD: 100000',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final amount = double.tryParse(controller.text);
-              Navigator.pop(context, amount);
-            },
-            child: const Text('Xác nhận'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => MomoDepositSheet(
+        onSuccess: _loadData,
       ),
     );
+    if (result == true && mounted) {
+      _loadData();
+    }
+  }
 
-    if (result != null && result > 0 && mounted) {
-      final repo = ref.read(walletRepositoryProvider);
-      final apiResult = isDeposit
-          ? await repo.deposit(result)
-          : await repo.withdraw(result);
-
-      if (apiResult.isSuccess && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '${isDeposit ? 'Nạp' : 'Rút'} ${_vndFormat.format(result)} VND thành công!'),
-          ),
-        );
-        _loadData();
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(apiResult.error?.message ?? 'Giao dịch thất bại')),
-        );
-      }
+  Future<void> _showMomoWithdrawSheet() async {
+    final balance = _wallet?.balance ?? 0;
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => MomoWithdrawSheet(
+        currentBalance: balance,
+        onSuccess: _loadData,
+      ),
+    );
+    if (result == true && mounted) {
+      _loadData();
     }
   }
 }
