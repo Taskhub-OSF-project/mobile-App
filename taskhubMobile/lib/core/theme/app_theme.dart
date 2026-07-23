@@ -49,11 +49,11 @@ class AppTheme {
           color: textPrimary, fontWeight: FontWeight.w600, fontSize: 16),
       titleSmall: GoogleFonts.nunito(
           color: textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
-      bodyLarge: GoogleFonts.nunito(color: textPrimary, fontSize: 16),
-      bodyMedium: GoogleFonts.nunito(color: textSecondary, fontSize: 14),
-      bodySmall: GoogleFonts.nunito(color: textTertiary, fontSize: 12),
+      bodyLarge: GoogleFonts.nunito(color: textPrimary, fontSize: 21),
+      bodyMedium: GoogleFonts.nunito(color: textSecondary, fontSize: 19),
+      bodySmall: GoogleFonts.nunito(color: textTertiary, fontSize: 17),
       labelLarge: GoogleFonts.nunito(
-          color: textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
+          color: textPrimary, fontWeight: FontWeight.w700, fontSize: 19),
     );
 
     return ThemeData(
@@ -114,7 +114,7 @@ class AppTheme {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: const TextStyle(color: textTertiary),
+        hintStyle: const TextStyle(color: textTertiary, fontSize: 19),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -125,7 +125,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(16),
           ),
           textStyle: GoogleFonts.nunito(
-            fontSize: 16,
+            fontSize: 21,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -139,7 +139,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(16),
           ),
           textStyle: GoogleFonts.nunito(
-            fontSize: 16,
+            fontSize: 21,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -148,7 +148,7 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: primary,
           textStyle: GoogleFonts.nunito(
-            fontSize: 14,
+            fontSize: 19,
             fontWeight: FontWeight.w700,
           ),
         ),

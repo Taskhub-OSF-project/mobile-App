@@ -74,6 +74,12 @@ class ApiConstants {
   static const String walletTransactions = '$apiPrefix/wallet/transactions';
   static const String walletTransactionsPaged = '$apiPrefix/wallet/transactions/paged';
 
+  // MoMo Payment
+  static const String momoDepositCreate = '$apiPrefix/momo/deposit/create';
+  static String momoDepositStatus(String orderId) => '$apiPrefix/momo/deposit/$orderId/status';
+  static const String momoWithdrawRequest = '$apiPrefix/momo/withdraw/request';
+
+
   // Notifications
   static const String notifications = '$apiPrefix/notifications';
   static const String unreadNotifications = '$apiPrefix/notifications/unread';

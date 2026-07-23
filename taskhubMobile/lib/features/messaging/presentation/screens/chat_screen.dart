@@ -21,6 +21,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   int? _currentUserId;
+  String? _otherUserName;
   Timer? _pollingTimer;
 
   @override
@@ -60,7 +61,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (result.isSuccess && mounted) {
       final msgs = result.data?.content ?? [];
       msgs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      
+
+      // Lấy tên người kia từ tin nhắn đầu tiên không phải của mình
+      if (_otherUserName == null) {
+        final otherMsg = msgs.firstWhere(
+          (m) => m.senderId != _currentUserId,
+          orElse: () => msgs.isNotEmpty ? msgs.first : throw Exception(),
+        );
+        if (otherMsg.senderId != _currentUserId) {
+          _otherUserName = otherMsg.senderName;
+        }
+      }
+
       bool shouldScroll = false;
       if (silent && _messages.isNotEmpty && msgs.isNotEmpty && msgs.length > _messages.length) {
          if (_scrollController.hasClients &&
@@ -122,7 +134,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trò chuyện'),
+        title: Text(_otherUserName ?? 'Trò chuyện'),
       ),
       body: Column(
         children: [
@@ -152,7 +164,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ),
           ),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
@@ -163,34 +175,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ],
             ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      decoration: InputDecoration(
-                        hintText: 'Nhập tin nhắn...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    decoration: InputDecoration(
+                      hintText: 'Nhập tin nhắn...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                     ),
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
                   ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: AppTheme.primary,
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                      onPressed: _sendMessage,
-                    ),
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: AppTheme.primary,
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                    onPressed: _sendMessage,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -216,7 +226,7 @@ class _MessageBubble extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? AppTheme.primary : Colors.grey.shade100,
+          color: isMe ? Colors.green.shade600 : Colors.grey.shade600,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -230,16 +240,17 @@ class _MessageBubble extends StatelessWidget {
           children: [
             Text(
               message.content,
-              style: TextStyle(
-                color: isMe ? Colors.white : AppTheme.textPrimary,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               _formatTime(message.createdAt),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 10,
-                color: isMe ? Colors.white70 : Colors.grey[500],
+                color: Colors.white70,
               ),
             ),
           ],

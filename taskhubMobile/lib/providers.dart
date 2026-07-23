@@ -9,6 +9,7 @@ import 'features/user/data/models/user_models.dart';
 import 'features/user/data/repositories/user_repository.dart';
 import 'features/task/data/repositories/task_repository.dart';
 import 'features/wallet/data/repositories/wallet_repository.dart';
+import 'features/wallet/data/repositories/momo_repository.dart';
 import 'features/notification/data/repositories/notification_repository.dart';
 import 'features/messaging/data/repositories/messaging_repository.dart';
 
@@ -353,6 +354,11 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
   return WalletRepository(ref.read(apiServiceProvider));
 });
+
+final momoRepositoryProvider = Provider<MomoRepository>((ref) {
+  return MomoRepository(ref.read(apiServiceProvider));
+});
+
 
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   return NotificationRepository(ref.read(apiServiceProvider));
