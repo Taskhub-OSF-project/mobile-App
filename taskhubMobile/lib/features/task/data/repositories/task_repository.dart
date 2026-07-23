@@ -225,13 +225,23 @@ class TaskRepository {
     return response;
   }
 
+  Future<Result<List<TaskResponse>>> getMyAppliedTasks() async {
+    final response = await _api.get<List<TaskResponse>>(
+      ApiConstants.myAppliedTasks,
+      parser: (json) => (json as List)
+          .map((e) => TaskResponse.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+    return response;
+  }
+
   Future<Result<SubmissionResponse>> submitWork(
       int taskId, String? notes, List<String>? fileUrls) async {
     return _api.post<SubmissionResponse>(
       ApiConstants.submitTask(taskId),
       data: {
-        'notes': notes,
-        if (fileUrls != null) 'fileUrl': fileUrls.join(','),
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (fileUrls != null && fileUrls.isNotEmpty) 'fileUrl': fileUrls.first,
       },
       parser: (json) =>
           SubmissionResponse.fromJson(json as Map<String, dynamic>),
@@ -288,11 +298,15 @@ class TaskRepository {
       ApiConstants.fileUpload,
       data: formData,
       parser: (json) {
-        // The API returns ApiResponse<FileUploadResponse>
-        // Depending on ApiResponse structure, the data might be mapped here.
-        // Let's assume the ApiClient unwraps ApiResponse.
-        // FileUploadResponse has 'url'.
-        return (json as Map<String, dynamic>)['url'] as String;
+        final map = json as Map<String, dynamic>;
+        // BE sometimes returns url=null but path is always populated
+        final url = map['url']?.toString();
+        final path = map['path']?.toString();
+        final result = url ?? path;
+        if (result == null || result.isEmpty) {
+          throw Exception('Upload response missing both url and path');
+        }
+        return result;
       },
     );
   }

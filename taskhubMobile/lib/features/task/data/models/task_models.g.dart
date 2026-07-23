@@ -25,12 +25,12 @@ ApplicationResponse _$ApplicationResponseFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       taskId: (json['taskId'] as num).toInt(),
       studentId: (json['studentId'] as num).toInt(),
-      studentName: json['studentName'] as String,
+      studentName: json['studentName']?.toString() ?? '',
       studentUniversity: json['studentUniversity'] as String?,
       studentMajor: json['studentMajor'] as String?,
       coverLetter: json['coverLetter'] as String?,
       status: json['status'] as String?,
-      appliedAt: json['appliedAt'] as String,
+      appliedAt: json['appliedAt']?.toString() ?? '',
     );
 
 Map<String, dynamic> _$ApplicationResponseToJson(
@@ -49,14 +49,14 @@ Map<String, dynamic> _$ApplicationResponseToJson(
 
 TaskResponse _$TaskResponseFromJson(Map<String, dynamic> json) => TaskResponse(
   id: (json['id'] as num).toInt(),
-  title: json['title'] as String,
-  description: json['description'] as String,
+  title: json['title']?.toString() ?? '',
+  description: json['description']?.toString() ?? '',
   category: json['category'] as String?,
-  budget: (json['budget'] as num).toDouble(),
+  budget: (json['budget'] as num?)?.toDouble() ?? 0.0,
   deadline: json['deadline'] as String?,
   status: json['status'] as String?,
-  hirerId: (json['hirerId'] as num).toInt(),
-  hirerName: json['hirerName'] as String,
+  hirerId: (json['hirerId'] as num?)?.toInt() ?? 0,
+  hirerName: json['hirerName']?.toString() ?? '',
   assignedToId: (json['assignedToId'] as num?)?.toInt(),
   assignedToName: json['assignedToName'] as String?,
   revisionCount: (json['revisionCount'] as num?)?.toInt(),
@@ -66,7 +66,7 @@ TaskResponse _$TaskResponseFromJson(Map<String, dynamic> json) => TaskResponse(
   applicants: (json['applicants'] as List<dynamic>?)
       ?.map((e) => ApplicationResponse.fromJson(e as Map<String, dynamic>))
       .toList(),
-  createdAt: json['createdAt'] as String,
+  createdAt: json['createdAt']?.toString() ?? '',
 );
 
 Map<String, dynamic> _$TaskResponseToJson(TaskResponse instance) =>
@@ -216,8 +216,8 @@ SubmissionResponse _$SubmissionResponseFromJson(Map<String, dynamic> json) =>
       submittedFiles: (json['submittedFiles'] as List<dynamic>?)
           ?.map((e) => SubmittedFileDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      submittedAt: json['submittedAt'] as String,
-      status: json['status'] as String,
+      submittedAt: json['submittedAt']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
     );
 
 Map<String, dynamic> _$SubmissionResponseToJson(SubmissionResponse instance) =>
@@ -258,9 +258,9 @@ SubmissionAIResult _$SubmissionAIResultFromJson(Map<String, dynamic> json) =>
       criteriaResults: (json['criteriaResults'] as List<dynamic>?)
           ?.map((e) => CriteriaAIResult.fromJson(e as Map<String, dynamic>))
           .toList(),
-      canSubmit: json['canSubmit'] as bool,
-      evaluatedAt: json['evaluatedAt'] as String?,
-      summary: json['summary'] as String?,
+      canSubmit: json['canSubmit'] == true,
+      evaluatedAt: json['evaluatedAt']?.toString(),
+      summary: json['summary']?.toString(),
     );
 
 Map<String, dynamic> _$SubmissionAIResultToJson(SubmissionAIResult instance) =>

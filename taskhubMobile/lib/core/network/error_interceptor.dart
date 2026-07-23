@@ -58,7 +58,7 @@ class ErrorInterceptor extends Interceptor {
       if (map.containsKey('message') && map['success'] == false) {
         return ApiError(
           statusCode: statusCode,
-          message: map['message'] as String,
+          message: map['message']?.toString() ?? 'Lỗi không xác định',
           payload: map,
         );
       }

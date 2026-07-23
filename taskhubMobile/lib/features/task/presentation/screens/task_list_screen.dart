@@ -130,9 +130,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> with SingleTick
 
     // Fetch applied tasks to filter them out from public tasks
     if (_isStudent && _searchPage == 0) {
-      final appliedRes = await repo.getMyTasks(status: 'APPLIED', page: 0);
+      final appliedRes = await repo.getMyAppliedTasks();
       if (appliedRes.isSuccess) {
-        _appliedTaskIds = appliedRes.data?.content.map((t) => t.id).toList() ?? [];
+        _appliedTaskIds = appliedRes.data?.map((t) => t.id).toList() ?? [];
       }
     }
 
@@ -195,7 +195,27 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> with SingleTick
         case 3: status = 'SUBMITTED'; break;
         case 4: status = 'COMPLETED'; break;
       }
-      result = await repo.getMyTasks(status: status, page: _page);
+      
+      if (status == 'APPLIED') {
+        final appliedRes = await repo.getMyAppliedTasks();
+        if (appliedRes.isSuccess) {
+          result = Result.success(PageResponse(
+            content: appliedRes.data ?? [],
+            page: 0,
+            size: appliedRes.data?.length ?? 0,
+            totalElements: appliedRes.data?.length ?? 0,
+            totalPages: 1,
+            first: true,
+            last: true,
+            hasNext: false,
+            hasPrevious: false,
+          ));
+        } else {
+          result = Result.failure(appliedRes.error!);
+        }
+      } else {
+        result = await repo.getMyTasks(status: status, page: _page);
+      }
     } else {
       String? status;
       if (_tabController.index == 1) {

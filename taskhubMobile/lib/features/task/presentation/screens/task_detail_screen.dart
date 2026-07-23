@@ -9,6 +9,7 @@ import '../../../review/data/repositories/review_repository.dart';
 import '../../../review/data/models/review_models.dart';
 import '../../../../shared/widgets/common_widgets.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
 
 class TaskDetailScreen extends ConsumerStatefulWidget {
   final int taskId;
@@ -21,6 +22,7 @@ class TaskDetailScreen extends ConsumerStatefulWidget {
 
 class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   TaskResponse? _task;
+  LatestSubmissionResultResponse? _latestSubmission;
   bool _isLoading = true;
   String? _error;
 
@@ -41,6 +43,16 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         _task = result.data;
         _isLoading = false;
       });
+      // Load latest submission for hirer view (SUBMITTED or COMPLETED)
+      final status = result.data?.status ?? '';
+      if (status == 'SUBMITTED' || status == 'COMPLETED') {
+        final subRes = await ref.read(taskRepositoryProvider).getLatestSubmission(widget.taskId);
+        if (subRes.isSuccess && mounted) {
+          setState(() {
+            _latestSubmission = subRes.data;
+          });
+        }
+      }
     } else if (mounted) {
       setState(() {
         _error = result.error?.message ?? 'Failed to load task';
@@ -394,6 +406,185 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   ],
                 ),
               ),
+
+            // ── Hirer: submission review panel ──────────────────────────
+            if (isHirer && _latestSubmission != null &&
+                (task.status == 'SUBMITTED' || task.status == 'COMPLETED')) ...[
+              
+              // AI criteria results
+              if (_latestSubmission!.aiResult != null) ...[
+                Builder(builder: (context) {
+                  final ai = _latestSubmission!.aiResult!;
+                  final total = ai.criteriaResults?.length ?? 0;
+                  final met = ai.criteriaResults
+                          ?.where((c) => (c.status ?? '').toUpperCase() == 'MET')
+                          .length ??
+                      0;
+                  final color = ai.canSubmit ? Colors.green : Colors.orange;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: color.withOpacity(0.4)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Icon(Icons.auto_awesome, color: color, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '$met/$total tiêu chí đạt',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 14),
+                            ),
+                          ),
+                        ]),
+                        const SizedBox(height: 6),
+                        Text(
+                          ai.summary ?? '$met/$total tiêu chí đạt yêu cầu.',
+                          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                        ),
+                        if (ai.criteriaResults != null && ai.criteriaResults!.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          ...ai.criteriaResults!.map((c) {
+                            final st = (c.status ?? '').toUpperCase();
+                            final isMet = st == 'MET';
+                            final isPartial = st == 'PARTIAL';
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    isMet ? Icons.check_circle : (isPartial ? Icons.info : Icons.cancel),
+                                    size: 15,
+                                    color: isMet ? Colors.green : (isPartial ? Colors.orange : Colors.red),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          c.criteria ?? '',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                        ),
+                                        if (c.evidence != null && c.evidence!.isNotEmpty)
+                                          Text(
+                                            c.evidence!,
+                                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
+                    ),
+                  );
+                }),
+              ],
+
+              // Student notes
+              if (_latestSubmission!.submission?.notes != null &&
+                  _latestSubmission!.submission!.notes!.isNotEmpty) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'GHI CHÚ CỦA SINH VIÊN',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accent,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _latestSubmission!.submission!.notes!,
+                        style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // File submission / disbursed status
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: task.status == 'COMPLETED'
+                      ? Colors.green.withOpacity(0.08)
+                      : AppTheme.surfaceElevated,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: task.status == 'COMPLETED'
+                        ? Colors.green.withOpacity(0.4)
+                        : AppTheme.border,
+                  ),
+                ),
+                child: task.status == 'COMPLETED'
+                    ? Row(children: [
+                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Đã giải ngân — Công việc hoàn thành',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ])
+                    : Row(
+                        children: [
+                          const Icon(Icons.insert_drive_file_outlined, size: 20, color: Colors.grey),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _latestSubmission!.submission?.fileUrl ?? 'File bài nộp',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (_latestSubmission!.submission?.fileUrl != null) ...[
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              onPressed: () {
+                                // Open file link
+                              },
+                              icon: const Icon(Icons.visibility_outlined, size: 16),
+                              label: const Text('Xem bài', style: TextStyle(fontSize: 13)),
+                              style: TextButton.styleFrom(
+                                minimumSize: Size.zero,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+            ],
+
             if (task.status == 'DISPUTED')
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -511,22 +702,36 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Icon(Icons.auto_awesome, color: aiResult!.canSubmit ? Colors.green : Colors.orange, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    aiResult!.canSubmit ? 'Kết quả AI: Đạt yêu cầu' : 'Kết quả AI: Cần bổ sung',
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: aiResult!.canSubmit ? Colors.green : Colors.orange),
-                                  ),
-                                ),
-                              ],
+                            Builder(
+                              builder: (context) {
+                                final total = aiResult!.criteriaResults?.length ?? 0;
+                                final met = aiResult!.criteriaResults?.where((c) => c.status == 'met' || c.status == 'MET').length ?? 0;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.auto_awesome, color: aiResult!.canSubmit ? Colors.green : Colors.orange, size: 20),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Kết quả kiểm tra AI: $met/$total tiêu chí đạt',
+                                            style: TextStyle(fontWeight: FontWeight.bold, color: aiResult!.canSubmit ? Colors.green : Colors.orange),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      (aiResult!.summary != null && aiResult!.summary!.isNotEmpty) 
+                                          ? aiResult!.summary! 
+                                          : '$met/$total tiêu chí đạt yêu cầu.',
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  ],
+                                );
+                              }
                             ),
-                            if (aiResult!.summary != null && aiResult!.summary!.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(aiResult!.summary!, style: const TextStyle(fontSize: 13)),
-                            ],
                             if (aiResult!.criteriaResults != null && aiResult!.criteriaResults!.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               ...aiResult!.criteriaResults!.map((c) => Padding(
@@ -607,7 +812,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                             widget.taskId, 
                             SubmissionRequest(
                               fileUrl: fileUrlToUse,
-                              notes: notesController.text.trim(),
+                              notes: notesController.text.trim().isEmpty ? null : notesController.text.trim(),
                             )
                           );
                           
@@ -935,7 +1140,14 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                       await repo.fundEscrow(task.id);
                       _loadTask();
                     },
-                    child: const Text('Nạp Escrow'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.security, size: 18),
+                        const SizedBox(width: 8),
+                        Text('Ký quỹ ${NumberFormat.currency(locale: 'vi_VN', symbol: '').format(task.budget * 1.05).trim()} đ'),
+                      ],
+                    ),
                   ),
                 ),
               ],

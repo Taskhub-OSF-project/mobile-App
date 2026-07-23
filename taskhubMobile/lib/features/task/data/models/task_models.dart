@@ -302,7 +302,7 @@ class SubmissionAIResult {
   SubmissionAIResult({
     this.overallStatus,
     this.criteriaResults,
-    required this.canSubmit,
+    this.canSubmit = false,
     this.evaluatedAt,
     this.summary,
   });
