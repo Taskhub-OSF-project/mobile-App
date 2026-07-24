@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/common_widgets.dart';
@@ -24,6 +25,44 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'STUDENT';
+
+  static const _webClientId =
+      '547513175107-8ontkvmfur1r9giot2d98o1lufeiv1lm.apps.googleusercontent.com';
+
+  final _googleSignIn = GoogleSignIn(serverClientId: _webClientId);
+
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      await _googleSignIn.signOut();
+      final account = await _googleSignIn.signIn();
+      if (account == null) return;
+
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không lấy được Google token')),
+          );
+        }
+        return;
+      }
+
+      final success = await ref
+          .read(authNotifierProvider.notifier)
+          .googleLogin(idToken, role: _selectedRole);
+
+      if (success && mounted) {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi Google Sign-In: $e')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -107,6 +146,47 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                 ),
                 const SizedBox(height: 32),
+
+                // ── Google Sign-In Button ──
+                OutlinedButton.icon(
+                  onPressed: authState.isLoading ? null : _handleGoogleSignIn,
+                  icon: Image.network(
+                    'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                    height: 20,
+                    width: 20,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.g_mobiledata, size: 20),
+                  ),
+                  label: const Text(
+                    'Đăng ký với Google',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    foregroundColor: AppTheme.textPrimary,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey[300])),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'hoặc điền form',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey[300])),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
                 if (authState.isError && authState.errorMessage != null)
                   Container(
                     padding: const EdgeInsets.all(12),

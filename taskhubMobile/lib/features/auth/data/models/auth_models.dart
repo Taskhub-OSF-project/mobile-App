@@ -210,7 +210,7 @@ class PasswordResetRequest {
   Map<String, dynamic> toJson() => _$PasswordResetRequestToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class PasswordResetConfirmRequest {
   final String token;
   final String newPassword;
@@ -224,4 +224,17 @@ class PasswordResetConfirmRequest {
       _$PasswordResetConfirmRequestFromJson(json);
 
   Map<String, dynamic> toJson() => _$PasswordResetConfirmRequestToJson(this);
+}
+
+@JsonSerializable()
+class GoogleAuthRequest {
+  final String credential;
+  final String? role;
+
+  GoogleAuthRequest({required this.credential, this.role});
+
+  factory GoogleAuthRequest.fromJson(Map<String, dynamic> json) =>
+      _$GoogleAuthRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$GoogleAuthRequestToJson(this);
 }

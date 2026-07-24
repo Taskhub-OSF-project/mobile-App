@@ -328,6 +328,59 @@ class AuthNotifier extends StateNotifier<AuthState> {
       },
     );
   }
+
+  Future<bool> googleLogin(String credential, {String? role}) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    try {
+      final result = await _authRepo.googleAuth(
+        GoogleAuthRequest(credential: credential, role: role),
+      );
+
+      return result.when(
+        success: (AuthResponse auth) async {
+          await _storage.saveTokens(
+            accessToken: auth.accessToken,
+            refreshToken: auth.refreshToken,
+          );
+          await _storage.saveUserSession(
+            userId: auth.userId,
+            role: auth.role.name,
+            email: auth.email,
+            fullName: auth.fullName,
+          );
+          final profileResult = await _userRepo.getProfile(auth.userId);
+          state = state.copyWith(
+            status: AuthStatus.authenticated,
+            authResponse: auth,
+            user: profileResult.data,
+          );
+          return true;
+        },
+        failure: (error) {
+          final msg = (error as ApiError).message;
+          // BE returns error when new Google user hasn't picked a role yet
+          if (msg.toLowerCase().contains('role') && role == null) {
+            state = state.copyWith(
+              status: AuthStatus.unauthenticated,
+              errorMessage: 'ROLE_REQUIRED',
+            );
+          } else {
+            state = state.copyWith(
+              status: AuthStatus.error,
+              errorMessage: msg,
+            );
+          }
+          return false;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'Lỗi hệ thống: $e',
+      );
+      return false;
+    }
+  }
 }
 
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
