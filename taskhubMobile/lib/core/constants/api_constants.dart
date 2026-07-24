@@ -2,6 +2,7 @@ class ApiConstants {
   ApiConstants._();
 
   // Update this to your backend's IP/domain
+  //static const String baseUrl = 'https://taskhubvn.com'; // Production
   static const String baseUrl = 'http://10.0.2.2:8080'; // Android emulator localhost
   static const String apiPrefix = '/api';
 
@@ -19,6 +20,7 @@ class ApiConstants {
   static const String verifyPhoneOtp = '$apiPrefix/auth/verify-phone-otp';
   static const String forgotPasswordPhone = '$apiPrefix/auth/forgot-password-phone';
   static const String resetPasswordOtp = '$apiPrefix/auth/reset-password-otp';
+  static const String googleAuth = '$apiPrefix/auth/google';
 
   // Users
   static const String me = '$apiPrefix/users/me';

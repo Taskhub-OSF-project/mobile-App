@@ -24,6 +24,14 @@ class AuthRepository {
     );
   }
 
+  Future<Result<AuthResponse>> googleAuth(GoogleAuthRequest request) async {
+    return _api.post<AuthResponse>(
+      ApiConstants.googleAuth,
+      data: request.toJson(),
+      parser: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
   Future<Result<void>> logout(String? refreshToken) async {
     return _api.post<void>(
       ApiConstants.logout,

@@ -167,3 +167,17 @@ Map<String, dynamic> _$PasswordResetConfirmRequestToJson(
   'token': instance.token,
   'newPassword': instance.newPassword,
 };
+
+GoogleAuthRequest _$GoogleAuthRequestFromJson(Map<String, dynamic> json) =>
+    GoogleAuthRequest(
+      credential: json['credential'] as String,
+      role: json['role'] as String?,
+    );
+
+Map<String, dynamic> _$GoogleAuthRequestToJson(GoogleAuthRequest instance) {
+  final val = <String, dynamic>{'credential': instance.credential};
+  if (instance.role != null) {
+    val['role'] = instance.role;
+  }
+  return val;
+}
