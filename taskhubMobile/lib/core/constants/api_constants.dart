@@ -2,8 +2,8 @@ class ApiConstants {
   ApiConstants._();
 
   // Update this to your backend's IP/domain
-  //static const String baseUrl = 'https://taskhubvn.com'; // Production
-  static const String baseUrl = 'http://10.0.2.2:8080'; // Android emulator localhost
+  static const String baseUrl = 'https://taskhubvn.com'; // Production
+  //static const String baseUrl = 'http://10.0.2.2:8080'; // Android emulator localhost
   static const String apiPrefix = '/api';
 
   // Auth
