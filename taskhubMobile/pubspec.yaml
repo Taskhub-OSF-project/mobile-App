@@ -1,7 +1,7 @@
 name: taskhub_mobile
 description: "TaskHub mobile application - connect students and hirers for freelance tasks"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.2+7
 
 environment:
   sdk: ^3.11.5
