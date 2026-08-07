@@ -20,6 +20,8 @@ class ApiConstants {
   static const String verifyPhoneOtp = '$apiPrefix/auth/verify-phone-otp';
   static const String forgotPasswordPhone = '$apiPrefix/auth/forgot-password-phone';
   static const String resetPasswordOtp = '$apiPrefix/auth/reset-password-otp';
+  static const String verifyEmailOtp = '$apiPrefix/auth/email-otp/verify';
+  static const String resendEmailOtp = '$apiPrefix/auth/email-otp/resend';
   static const String googleAuth = '$apiPrefix/auth/google';
 
   // Users
@@ -76,11 +78,10 @@ class ApiConstants {
   static const String walletTransactions = '$apiPrefix/wallet/transactions';
   static const String walletTransactionsPaged = '$apiPrefix/wallet/transactions/paged';
 
-  // MoMo Payment
-  static const String momoDepositCreate = '$apiPrefix/momo/deposit/create';
-  static String momoDepositStatus(String orderId) => '$apiPrefix/momo/deposit/$orderId/status';
-  static const String momoWithdrawRequest = '$apiPrefix/momo/withdraw/request';
-
+  // SePay & Payout
+  static const String sepayConfig = '$apiPrefix/sepay/config';
+  static const String payoutRequest = '$apiPrefix/wallet/payout-request';
+  static const String myPayoutRequests = '$apiPrefix/wallet/payout-requests/my';
 
   // Notifications
   static const String notifications = '$apiPrefix/notifications';

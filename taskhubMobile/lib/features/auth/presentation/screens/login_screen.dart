@@ -59,6 +59,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (success && mounted) {
         context.go('/home');
+      } else if (!success && mounted) {
+        final errorMsg = ref.read(authNotifierProvider).errorMessage;
+        if (errorMsg != null && errorMsg.startsWith('EMAIL_OTP_REQUIRED:')) {
+          final parts = errorMsg.split(':');
+          final challengeId = parts[1];
+          final email = parts[2];
+          ref.read(authNotifierProvider.notifier).clearError();
+          context.go('/email-otp-verify', extra: {
+            'challengeId': challengeId,
+            'email': email,
+          });
+        }
       }
     } catch (e) {
       if (mounted) {

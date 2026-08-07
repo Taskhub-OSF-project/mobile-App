@@ -7,7 +7,7 @@ enum UserRole { ADMIN, HIRER, STUDENT }
 @JsonSerializable()
 class AuthResponse {
   @JsonKey(name: 'token')
-  final String accessToken;
+  final String? accessToken;
   @JsonKey(name: 'refreshToken')
   final String? refreshToken;
   @JsonKey(name: 'userId')
@@ -16,17 +16,24 @@ class AuthResponse {
   @JsonKey(name: 'fullName')
   final String fullName;
   final UserRole role;
-  @JsonKey(name: 'expiresAt')
   final int? expiresAt;
+  final bool? emailOtpRequired;
+  final String? otpChallengeId;
+  final String? otpPurpose;
+  final int? otpExpiresIn;
 
   AuthResponse({
-    required this.accessToken,
+    this.accessToken,
     this.refreshToken,
     required this.userId,
     required this.email,
     required this.fullName,
     required this.role,
     this.expiresAt,
+    this.emailOtpRequired,
+    this.otpChallengeId,
+    this.otpPurpose,
+    this.otpExpiresIn,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) =>
@@ -237,4 +244,29 @@ class GoogleAuthRequest {
       _$GoogleAuthRequestFromJson(json);
 
   Map<String, dynamic> toJson() => _$GoogleAuthRequestToJson(this);
+}
+
+@JsonSerializable()
+class EmailOtpVerifyRequest {
+  final String challengeId;
+  final String code;
+
+  EmailOtpVerifyRequest({required this.challengeId, required this.code});
+
+  factory EmailOtpVerifyRequest.fromJson(Map<String, dynamic> json) =>
+      _$EmailOtpVerifyRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EmailOtpVerifyRequestToJson(this);
+}
+
+@JsonSerializable()
+class EmailOtpResendRequest {
+  final String challengeId;
+
+  EmailOtpResendRequest({required this.challengeId});
+
+  factory EmailOtpResendRequest.fromJson(Map<String, dynamic> json) =>
+      _$EmailOtpResendRequestFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EmailOtpResendRequestToJson(this);
 }

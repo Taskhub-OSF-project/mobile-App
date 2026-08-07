@@ -7,21 +7,21 @@ import '../../../../providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/common_widgets.dart';
 
-class OtpVerificationScreen extends ConsumerStatefulWidget {
-  final String phone;
-  final String type;
+class EmailOtpVerificationScreen extends ConsumerStatefulWidget {
+  final String challengeId;
+  final String email;
 
-  const OtpVerificationScreen({
+  const EmailOtpVerificationScreen({
     super.key,
-    required this.phone,
-    required this.type,
+    required this.challengeId,
+    required this.email,
   });
 
   @override
-  ConsumerState<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+  ConsumerState<EmailOtpVerificationScreen> createState() => _EmailOtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
+class _EmailOtpVerificationScreenState extends ConsumerState<EmailOtpVerificationScreen> {
   final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _loading = false;
@@ -64,21 +64,21 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     setState(() {});
   }
 
-
-
   Future<void> _verifyOtp() async {
     if (_otpCode.length != 6) return;
     setState(() => _loading = true);
 
     try {
       final success = await ref.read(authNotifierProvider.notifier)
-          .resetPasswordWithOtp(widget.phone, _otpCode, 'DUMMY_PLACEHOLDER');
+          .verifyEmailOtp(widget.challengeId, _otpCode);
 
       if (success && mounted) {
-        context.go('/reset-password', extra: {
-          'phone': widget.phone,
-          'code': _otpCode,
-        });
+        context.go('/home');
+      } else if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ref.read(authNotifierProvider).errorMessage ?? 'Mã OTP không hợp lệ hoặc đã hết hạn')),
+        );
+        ref.read(authNotifierProvider.notifier).clearError();
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -89,14 +89,20 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     if (_countdown > 0) return;
     setState(() => _loading = true);
     try {
-      await ref.read(authNotifierProvider.notifier)
-          .requestPhoneOtp(widget.phone, widget.type);
-      setState(() => _countdown = 300);
-      _timer?.cancel();
-      _startCountdown();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã gửi lại mã OTP.')),
-      );
+      final success = await ref.read(authNotifierProvider.notifier)
+          .resendEmailOtp(widget.challengeId);
+      if (success) {
+        setState(() => _countdown = 300);
+        _timer?.cancel();
+        _startCountdown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã gửi lại mã OTP.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ref.read(authNotifierProvider).errorMessage ?? 'Gửi lại mã OTP thất bại.')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -112,7 +118,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Xác thực OTP'),
+        title: const Text('Xác thực OTP Email'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/login'),
@@ -136,7 +142,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Mã OTP 6 chữ số đã được gửi đến\n${widget.phone}',
+                'Mã OTP 6 chữ số đã được gửi đến\n${widget.email}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppTheme.textSecondary,
                     ),

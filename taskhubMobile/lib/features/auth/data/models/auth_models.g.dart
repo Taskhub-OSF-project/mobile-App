@@ -7,13 +7,17 @@ part of 'auth_models.dart';
 // **************************************************************************
 
 AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) => AuthResponse(
-  accessToken: json['token'] as String,
+  accessToken: json['token'] as String?,
   refreshToken: json['refreshToken'] as String?,
   userId: (json['userId'] as num).toInt(),
   email: json['email'] as String,
   fullName: json['fullName'] as String,
   role: $enumDecode(_$UserRoleEnumMap, json['role']),
   expiresAt: (json['expiresAt'] as num?)?.toInt(),
+  emailOtpRequired: json['emailOtpRequired'] as bool?,
+  otpChallengeId: json['otpChallengeId'] as String?,
+  otpPurpose: json['otpPurpose'] as String?,
+  otpExpiresIn: (json['otpExpiresIn'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$AuthResponseToJson(AuthResponse instance) =>
@@ -25,6 +29,10 @@ Map<String, dynamic> _$AuthResponseToJson(AuthResponse instance) =>
       'fullName': instance.fullName,
       'role': _$UserRoleEnumMap[instance.role]!,
       'expiresAt': instance.expiresAt,
+      'emailOtpRequired': instance.emailOtpRequired,
+      'otpChallengeId': instance.otpChallengeId,
+      'otpPurpose': instance.otpPurpose,
+      'otpExpiresIn': instance.otpExpiresIn,
     };
 
 const _$UserRoleEnumMap = {
@@ -174,10 +182,27 @@ GoogleAuthRequest _$GoogleAuthRequestFromJson(Map<String, dynamic> json) =>
       role: json['role'] as String?,
     );
 
-Map<String, dynamic> _$GoogleAuthRequestToJson(GoogleAuthRequest instance) {
-  final val = <String, dynamic>{'credential': instance.credential};
-  if (instance.role != null) {
-    val['role'] = instance.role;
-  }
-  return val;
-}
+Map<String, dynamic> _$GoogleAuthRequestToJson(GoogleAuthRequest instance) =>
+    <String, dynamic>{'credential': instance.credential, 'role': instance.role};
+
+EmailOtpVerifyRequest _$EmailOtpVerifyRequestFromJson(
+  Map<String, dynamic> json,
+) => EmailOtpVerifyRequest(
+  challengeId: json['challengeId'] as String,
+  code: json['code'] as String,
+);
+
+Map<String, dynamic> _$EmailOtpVerifyRequestToJson(
+  EmailOtpVerifyRequest instance,
+) => <String, dynamic>{
+  'challengeId': instance.challengeId,
+  'code': instance.code,
+};
+
+EmailOtpResendRequest _$EmailOtpResendRequestFromJson(
+  Map<String, dynamic> json,
+) => EmailOtpResendRequest(challengeId: json['challengeId'] as String);
+
+Map<String, dynamic> _$EmailOtpResendRequestToJson(
+  EmailOtpResendRequest instance,
+) => <String, dynamic>{'challengeId': instance.challengeId};

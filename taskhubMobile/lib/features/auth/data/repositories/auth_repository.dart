@@ -90,6 +90,21 @@ class AuthRepository {
     );
   }
 
+  Future<Result<AuthResponse>> verifyEmailOtp(EmailOtpVerifyRequest request) async {
+    return _api.post<AuthResponse>(
+      ApiConstants.verifyEmailOtp,
+      data: request.toJson(),
+      parser: (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<Result<void>> resendEmailOtp(EmailOtpResendRequest request) async {
+    return _api.post<void>(
+      ApiConstants.resendEmailOtp,
+      data: request.toJson(),
+    );
+  }
+
   // Maintaining Phone Auth endpoints from scaffold in case they are used
   Future<Result<AuthResponse>> loginByPhone(String phone, String password) async {
     return _api.post<AuthResponse>(

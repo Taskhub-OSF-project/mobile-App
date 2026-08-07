@@ -60,4 +60,43 @@ class WalletRepository {
     );
     return response;
   }
+
+  Future<Result<SepayBankConfig>> getSepayConfig() async {
+    return await _api.get<SepayBankConfig>(
+      ApiConstants.sepayConfig,
+      parser: (json) => SepayBankConfig.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<Result<PayoutRequestResponse>> createPayoutRequest({
+    required double amount,
+    required String bankCode,
+    required String accountNumber,
+    required String accountName,
+  }) async {
+    return await _api.post<PayoutRequestResponse>(
+      ApiConstants.payoutRequest,
+      data: {
+        'amount': amount,
+        'bankCode': bankCode,
+        'accountNumber': accountNumber,
+        'accountName': accountName,
+      },
+      parser: (json) => PayoutRequestResponse.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<Result<PageResponse<PayoutRequestResponse>>> getMyPayoutRequests({
+    int page = 0,
+    int size = 20,
+  }) async {
+    return await _api.get<PageResponse<PayoutRequestResponse>>(
+      ApiConstants.myPayoutRequests,
+      queryParameters: {'page': page, 'size': size},
+      parser: (json) => PageResponse<PayoutRequestResponse>.fromJson(
+        json as Map<String, dynamic>,
+        (e) => PayoutRequestResponse.fromJson(e as Map<String, dynamic>),
+      ),
+    );
+  }
 }

@@ -9,7 +9,6 @@ import 'features/user/data/models/user_models.dart';
 import 'features/user/data/repositories/user_repository.dart';
 import 'features/task/data/repositories/task_repository.dart';
 import 'features/wallet/data/repositories/wallet_repository.dart';
-import 'features/wallet/data/repositories/momo_repository.dart';
 import 'features/notification/data/repositories/notification_repository.dart';
 import 'features/messaging/data/repositories/messaging_repository.dart';
 
@@ -101,8 +100,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       return result.when(
         success: (AuthResponse auth) async {
+          if (auth.emailOtpRequired == true && auth.otpChallengeId != null) {
+            state = state.copyWith(
+              status: AuthStatus.unauthenticated,
+              errorMessage: 'EMAIL_OTP_REQUIRED:${auth.otpChallengeId}:${auth.email}',
+            );
+            return false;
+          }
           await _storage.saveTokens(
-            accessToken: auth.accessToken,
+            accessToken: auth.accessToken ?? '',
             refreshToken: auth.refreshToken,
           );
           await _storage.saveUserSession(
@@ -136,6 +142,63 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> verifyEmailOtp(String challengeId, String code) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    try {
+      final result = await _authRepo.verifyEmailOtp(
+        EmailOtpVerifyRequest(challengeId: challengeId, code: code),
+      );
+
+      return result.when(
+        success: (AuthResponse auth) async {
+          await _storage.saveTokens(
+            accessToken: auth.accessToken ?? '',
+            refreshToken: auth.refreshToken,
+          );
+          await _storage.saveUserSession(
+            userId: auth.userId,
+            role: auth.role.name,
+            email: auth.email,
+            fullName: auth.fullName,
+          );
+          final profileResult = await _userRepo.getProfile(auth.userId);
+          state = state.copyWith(
+            status: AuthStatus.authenticated,
+            authResponse: auth,
+            user: profileResult.data,
+          );
+          return true;
+        },
+        failure: (error) {
+          state = state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: (error as ApiError).message,
+          );
+          return false;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'Lỗi hệ thống: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> resendEmailOtp(String challengeId) async {
+    final result = await _authRepo.resendEmailOtp(
+      EmailOtpResendRequest(challengeId: challengeId),
+    );
+    return result.when(
+      success: (_) => true,
+      failure: (error) {
+        state = state.copyWith(errorMessage: (error as ApiError).message);
+        return false;
+      },
+    );
+  }
+
   Future<bool> register({
     required String email,
     required String password,
@@ -166,7 +229,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return result.when(
         success: (AuthResponse auth) async {
           await _storage.saveTokens(
-            accessToken: auth.accessToken,
+            accessToken: auth.accessToken ?? '',
             refreshToken: auth.refreshToken,
           );
           await _storage.saveUserSession(
@@ -216,7 +279,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return result.when(
       success: (AuthResponse auth) async {
         await _storage.saveTokens(
-          accessToken: auth.accessToken,
+          accessToken: auth.accessToken ?? '',
           refreshToken: auth.refreshToken,
         );
         await _storage.saveUserSession(
@@ -266,7 +329,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return result.when(
         success: (AuthResponse auth) async {
           await _storage.saveTokens(
-            accessToken: auth.accessToken,
+            accessToken: auth.accessToken ?? '',
             refreshToken: auth.refreshToken,
           );
           await _storage.saveUserSession(
@@ -339,7 +402,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return result.when(
         success: (AuthResponse auth) async {
           await _storage.saveTokens(
-            accessToken: auth.accessToken,
+            accessToken: auth.accessToken ?? '',
             refreshToken: auth.refreshToken,
           );
           await _storage.saveUserSession(
@@ -406,10 +469,6 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
   return WalletRepository(ref.read(apiServiceProvider));
-});
-
-final momoRepositoryProvider = Provider<MomoRepository>((ref) {
-  return MomoRepository(ref.read(apiServiceProvider));
 });
 
 

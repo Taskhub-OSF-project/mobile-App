@@ -9,6 +9,7 @@ import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/auth/presentation/screens/forgot_password_screen.dart';
 import 'features/auth/presentation/screens/otp_verification_screen.dart';
+import 'features/auth/presentation/screens/email_otp_verification_screen.dart';
 import 'features/auth/presentation/screens/reset_password_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/task/presentation/screens/task_list_screen.dart';
@@ -39,6 +40,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = isLoggingIn || isRegistering || isSplash || isOnboarding ||
           state.matchedLocation == '/forgot-password' ||
           state.matchedLocation == '/otp-verify' ||
+          state.matchedLocation == '/email-otp-verify' ||
           state.matchedLocation == '/reset-password';
 
       if (authState.status == AuthStatus.initial ||
@@ -107,6 +109,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           return ResetPasswordScreen(
             phone: extra['phone'] as String? ?? '',
             code: extra['code'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/email-otp-verify',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return EmailOtpVerificationScreen(
+            challengeId: extra['challengeId'] as String? ?? '',
+            email: extra['email'] as String? ?? '',
           );
         },
       ),

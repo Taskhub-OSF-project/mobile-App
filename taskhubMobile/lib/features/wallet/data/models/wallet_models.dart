@@ -76,3 +76,67 @@ class WalletReadinessResponse {
 
   Map<String, dynamic> toJson() => _$WalletReadinessResponseToJson(this);
 }
+
+@JsonSerializable()
+class SepayBankConfig {
+  final String bankCode;
+  final String bankAccount;
+  final String bankName;
+  final String accountName;
+  final String qrTemplate;
+  final double? minDepositAmount;
+  final double? maxDepositAmount;
+
+  SepayBankConfig({
+    required this.bankCode,
+    required this.bankAccount,
+    required this.bankName,
+    required this.accountName,
+    required this.qrTemplate,
+    this.minDepositAmount,
+    this.maxDepositAmount,
+  });
+
+  factory SepayBankConfig.fromJson(Map<String, dynamic> json) =>
+      _$SepayBankConfigFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SepayBankConfigToJson(this);
+}
+
+@JsonSerializable()
+class PayoutRequestResponse {
+  final int id;
+  final int userId;
+  final String userName;
+  final String userEmail;
+  final double amount;
+  final String bankCode;
+  final String accountNumber;
+  final String accountName;
+  final String status;
+  final String statusLabel;
+  final String? adminNote;
+  final String createdAt;
+  final String? qrUrl;
+
+  PayoutRequestResponse({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    required this.userEmail,
+    required this.amount,
+    required this.bankCode,
+    required this.accountNumber,
+    required this.accountName,
+    required this.status,
+    required this.statusLabel,
+    this.adminNote,
+    required this.createdAt,
+    this.qrUrl,
+  });
+
+  factory PayoutRequestResponse.fromJson(Map<String, dynamic> json) =>
+      _$PayoutRequestResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PayoutRequestResponseToJson(this);
+}

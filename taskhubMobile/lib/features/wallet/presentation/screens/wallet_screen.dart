@@ -5,8 +5,8 @@ import '../../../../providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../wallet/data/models/wallet_models.dart';
 import '../../../../shared/widgets/common_widgets.dart';
-import 'momo_deposit_sheet.dart';
-import 'momo_withdraw_sheet.dart';
+import 'sepay_deposit_sheet.dart';
+import 'payout_withdraw_sheet.dart';
 
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
@@ -20,10 +20,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   late TabController _tabController;
   WalletResponse? _wallet;
   List<WalletTransactionResponse> _transactions = [];
+  List<PayoutRequestResponse> _payoutRequests = [];
   bool _isLoading = true;
   String? _error;
-  int _page = 0;
-  bool _hasMore = true;
   double _escrowBalance = 0;
 
   final _vndFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '');
@@ -31,7 +30,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadData();
   }
 
@@ -49,6 +48,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     final repo = ref.read(walletRepositoryProvider);
     final balanceResult = await repo.getBalance();
     final txResult = await repo.getTransactionsPaged();
+    final payoutResult = await repo.getMyPayoutRequests();
     
     double computedEscrow = 0;
     final user = ref.read(currentUserProvider);
@@ -71,7 +71,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
         _wallet = balanceResult.data;
         _escrowBalance = computedEscrow;
         _transactions = txResult.data?.content ?? [];
-        _hasMore = txResult.data?.hasNext ?? false;
+        _payoutRequests = payoutResult.data?.content ?? [];
         _isLoading = false;
       });
     }
@@ -86,6 +86,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
           controller: _tabController,
           tabs: const [
             Tab(text: 'Tổng quan'),
+            Tab(text: 'Yêu cầu rút'),
             Tab(text: 'Giao dịch'),
           ],
         ),
@@ -98,6 +99,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                   controller: _tabController,
                   children: [
                     _buildOverview(),
+                    _buildPayouts(),
                     _buildTransactions(),
                   ],
                 ),
@@ -163,20 +165,19 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => _showMomoDepositSheet(),
-                            icon: const Text('M', style: TextStyle(
-                              fontWeight: FontWeight.w800, fontSize: 16)),
+                            onPressed: () => _showDepositSheet(),
+                            icon: const Icon(Icons.qr_code, size: 18),
                             label: const Text('Nạp tiền'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFFAE2070),
+                              foregroundColor: const Color(0xFF00513D),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _showMomoWithdrawSheet(),
+                            onPressed: () => _showWithdrawSheet(),
                             icon: const Icon(Icons.arrow_upward_rounded, size: 18),
                             label: const Text('Rút tiền'),
                             style: OutlinedButton.styleFrom(
@@ -261,29 +262,138 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     );
   }
 
-  Future<void> _showMomoDepositSheet() async {
+  Widget _buildPayouts() {
+    if (_payoutRequests.isEmpty) {
+      return const EmptyState(
+        icon: Icons.account_balance_wallet_outlined,
+        title: 'Chưa có đơn rút tiền',
+        subtitle: 'Các đơn yêu cầu rút tiền sẽ hiển thị tại đây.',
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _payoutRequests.length,
+        itemBuilder: (context, index) {
+          final pr = _payoutRequests[index];
+          final isPending = pr.status == 'PENDING';
+          final isCompleted = pr.status == 'COMPLETED';
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            isPending ? Icons.access_time_filled : isCompleted ? Icons.check_circle : Icons.cancel,
+                            color: isPending ? const Color(0xFF8A5B00) : isCompleted ? AppTheme.success : AppTheme.error,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text('#PR-${pr.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isPending ? const Color(0xFFFFF4D6) : isCompleted ? const Color(0xFFE6F4EA) : const Color(0xFFFDECEA),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          pr.statusLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isPending ? const Color(0xFF8A5B00) : isCompleted ? const Color(0xFF237A45) : const Color(0xFFB42318),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${pr.bankCode} - ${pr.accountNumber} (${pr.accountName})',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF52645D)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_vndFormat.format(pr.amount)} ₫',
+                        style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF031D31)),
+                      ),
+                    ],
+                  ),
+                  if (pr.adminNote != null && pr.adminNote!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F7F5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFD5E2DB)),
+                      ),
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            const TextSpan(text: 'Phản hồi: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                            TextSpan(text: pr.adminNote),
+                          ],
+                        ),
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF40544B)),
+                      ),
+                    )
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    pr.createdAt.split('T').join(' ').substring(0, 16),
+                    style: const TextStyle(fontSize: 10, color: Color(0xFF84948D)),
+                  )
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showDepositSheet() async {
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => MomoDepositSheet(
-        onSuccess: _loadData,
-      ),
+      builder: (_) => const SepayDepositSheet(),
     );
     if (result == true && mounted) {
       _loadData();
     }
   }
 
-  Future<void> _showMomoWithdrawSheet() async {
+  Future<void> _showWithdrawSheet() async {
     final balance = _wallet?.balance ?? 0;
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => MomoWithdrawSheet(
+      builder: (_) => PayoutWithdrawSheet(
         currentBalance: balance,
-        onSuccess: _loadData,
       ),
     );
     if (result == true && mounted) {

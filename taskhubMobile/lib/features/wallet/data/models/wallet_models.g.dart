@@ -59,3 +59,61 @@ Map<String, dynamic> _$WalletReadinessResponseToJson(
   'action': instance.action,
   'resumeFlow': instance.resumeFlow,
 };
+
+SepayBankConfig _$SepayBankConfigFromJson(Map<String, dynamic> json) =>
+    SepayBankConfig(
+      bankCode: json['bankCode'] as String,
+      bankAccount: json['bankAccount'] as String,
+      bankName: json['bankName'] as String,
+      accountName: json['accountName'] as String,
+      qrTemplate: json['qrTemplate'] as String,
+      minDepositAmount: (json['minDepositAmount'] as num?)?.toDouble(),
+      maxDepositAmount: (json['maxDepositAmount'] as num?)?.toDouble(),
+    );
+
+Map<String, dynamic> _$SepayBankConfigToJson(SepayBankConfig instance) =>
+    <String, dynamic>{
+      'bankCode': instance.bankCode,
+      'bankAccount': instance.bankAccount,
+      'bankName': instance.bankName,
+      'accountName': instance.accountName,
+      'qrTemplate': instance.qrTemplate,
+      'minDepositAmount': instance.minDepositAmount,
+      'maxDepositAmount': instance.maxDepositAmount,
+    };
+
+PayoutRequestResponse _$PayoutRequestResponseFromJson(
+  Map<String, dynamic> json,
+) => PayoutRequestResponse(
+  id: (json['id'] as num).toInt(),
+  userId: (json['userId'] as num).toInt(),
+  userName: json['userName'] as String,
+  userEmail: json['userEmail'] as String,
+  amount: (json['amount'] as num).toDouble(),
+  bankCode: json['bankCode'] as String,
+  accountNumber: json['accountNumber'] as String,
+  accountName: json['accountName'] as String,
+  status: json['status'] as String,
+  statusLabel: json['statusLabel'] as String,
+  adminNote: json['adminNote'] as String?,
+  createdAt: json['createdAt'] as String,
+  qrUrl: json['qrUrl'] as String?,
+);
+
+Map<String, dynamic> _$PayoutRequestResponseToJson(
+  PayoutRequestResponse instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'userId': instance.userId,
+  'userName': instance.userName,
+  'userEmail': instance.userEmail,
+  'amount': instance.amount,
+  'bankCode': instance.bankCode,
+  'accountNumber': instance.accountNumber,
+  'accountName': instance.accountName,
+  'status': instance.status,
+  'statusLabel': instance.statusLabel,
+  'adminNote': instance.adminNote,
+  'createdAt': instance.createdAt,
+  'qrUrl': instance.qrUrl,
+};
